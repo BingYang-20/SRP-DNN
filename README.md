@@ -3,7 +3,7 @@ A python implementation of “**<a href="https://ieeexplore.ieee.org/document/97
 
 ## Datasets
 + **Source signals**: from <a href="http://www.openslr.org/12/" target="_blank">LibriSpeech database</a> 
-+ **Real-world Multi-channel microphone signals**: from <a href="https://www.locata.lms.tf.fau.de/datasets/" target="_blank">LOCATA database</a> 
++ **Real-world multi-channel microphone signals**: from <a href="https://www.locata.lms.tf.fau.de/datasets/" target="_blank">LOCATA database</a> 
   
 ## Quick start
 + **Preparation**
