@@ -7,15 +7,18 @@ A python implementation of “**<a href="https://ieeexplore.ieee.org/document/97
   
 ## Quick start
 + **Preparation**
-  - 
-
++ + copy the train-clean-100, dev-clean and test-clean folders of LibriSpeech database to SRP-DNN/data/SouSig/LibriSpeech
+ 
 + **Training**
   ```
-  python RunSRPDNN.py --train --gpu-id [*]
+  python RunSRPDNN.py --train --gpu-id [*] (--use-amp)
   ```
-+ **Test**
++ **Evaluation**
   ```
-  python RunSRPDNN.py --test --gpu-id [*] 
+  python RunSRPDNN.py --test --gpu-id [*] --time 00000000 --eval-mode locata pred (--use-amp)
+  python RunSRPDNN.py --test --no-cuda --time 00000000 --eval-mode locata pred (--use-amp)
+
+  python RunSRPDNN.py --test --gpu-id [*] --time 00000000 --eval-mode locata eval (--use-amp)
   ```
 + **Pretrained models**
   - exp/00000000/best_model.tar
