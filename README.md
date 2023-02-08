@@ -8,6 +8,7 @@ A python implementation of “**<a href="https://ieeexplore.ieee.org/document/97
 ## Quick start
 + **Preparation**
   - copy the train-clean-100, dev-clean and test-clean folders of LibriSpeech database to SRP-DNN/data/SouSig/LibriSpeech
+  - install: numpy, scipy, soundfile, tqdm, matplotlib, <a href="https://github.com/DavidDiazGuerra/gpuRIR" target="_blank">gpuRIR</a>, <a href="https://github.com/wiseman/py-webrtcvad" target="_blank">webrtcvad</a>, etc.
  
 + **Training**
   ```
