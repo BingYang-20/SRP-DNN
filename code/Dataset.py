@@ -87,8 +87,8 @@ dualch_array_setup = ArraySetup(arrayType='planar',
     orV = np.array([0.0, 1.0, 0.0]), # ??? put the source in oneside (indicated by orV) of the array
 	mic_scale = Parameter(1), # !!! half of the mic_distance should be smaller than the minimum separation between the array and the walls defined by array_pos
 	mic_pos = np.array(((
-			(-0.04, 0.0, 0.0),
 			(0.04, 0.0, 0.0),
+			(-0.04, 0.0, 0.0),
 	))), # Actural position is mic_scale*mic_pos
 	mic_orV = None, # Invalid for omnidirectional microphones
 	mic_pattern = 'omni'
@@ -850,6 +850,7 @@ class RandomTrajectoryDataset(Dataset):
 
 				if np.random.random(1) < 0.25:
 					traj_pts[:,:,source_idx] = np.ones((self.nb_points,1)) * src_pos_ini
+				# traj_pts[:,2,source_idx] = array_pos[2] # if sources and array are in the same horizontal plane
 
 			# Interpolate trajectory points
 			trajectory[:,:,source_idx]  = np.array([np.interp(t, timestamps, traj_pts[:,i,source_idx]) for i in range(3)]).transpose()

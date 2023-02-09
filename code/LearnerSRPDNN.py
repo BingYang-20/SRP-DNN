@@ -131,6 +131,12 @@ class SourceTrackingFromSTFTLearner(Learner):
 			dpipd_template = np.concatenate((dpipd_template.real[:,:,self.fre_range_used,:], dpipd_template.imag[:,:,self.fre_range_used,:]), axis=2).astype(np.float32) # (nele, nazi, 2nf, nmic-1)
 			dpipd_template = torch.from_numpy(dpipd_template).to(self.device) # (nele, nazi, 2nf, nmic)
 
+			# for azimuth estimation in half horizontal plane only
+			# nele, nazi, _, _ = dpipd_template.shape
+			# dpipd_template = dpipd_template[int((nele-1)/2):int((nele-1)/2)+1, int((nazi-1)/2):nazi, :, :]
+			# doa_candidate[0] = np.linspace(np.pi/2, np.pi/2, 1)
+			# doa_candidate[1] = np.linspace(0, np.pi, 37)
+
 			# rebatch from (nb*nmic, nt, 2nf) to (nb, nt, 2nf, nmic)
 			pred_ipd_rebatch = self.removebatch(pred_ipd, nb).permute(0, 2, 3, 1) # (nb, nt, 2nf, nmic)
 			if time_pool_size is not None:

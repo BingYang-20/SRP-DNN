@@ -20,7 +20,6 @@ class Learner(ABC):
 		""" Function: Use multiple GPUs.
 		"""
 		self.model = torch.nn.DataParallel(self.model) 
-		# loss.mean() is only suitable for the case when batch size is divisible by the number of gpus.
 		# When multiple gpus are used, 'module.' is added to the name of model parameters. 
 		# So whether using one gpu or multiple gpus should be consistent for model traning and checkpoints loading.
 
@@ -95,9 +94,9 @@ class Learner(ABC):
 
 			# add up gradients until optimizer.zero_grad(), multiply a scale to gurantee the gradients equal to that when trajectories_per_gpu_call = trajectories_per_batch
 			if self.use_amp:
-				self.scaler.scale(loss_batch.mean()).backward()
+				self.scaler.scale(loss_batch).backward()
 			else:
-				loss_batch.mean().backward()
+				loss_batch.backward()
 
 			if self.use_amp:
 				self.scaler.step(optimizer)
@@ -107,12 +106,12 @@ class Learner(ABC):
 
 			optimizer.zero_grad()
 
-			avg_loss = avg_beta * avg_loss + (1 - avg_beta) * loss_batch.mean().item()
+			avg_loss = avg_beta * avg_loss + (1 - avg_beta) * loss_batch.item()
 			pbar.set_postfix(loss=avg_loss / (1 - avg_beta ** (batch_idx + 1)))
-			# pbar.set_postfix(loss=loss.mean().item())
+			# pbar.set_postfix(loss=loss.item())
 			pbar.update()
 
-			loss += loss_batch.mean().item()
+			loss += loss_batch.item()
 
 			if return_metric: 
 				pred_batch, gt_batch = self.predgt2DOA(pred_batch = pred_batch, gt_batch = gt_batch)
@@ -121,7 +120,7 @@ class Learner(ABC):
 					for m in metric_batch.keys():
 						metric[m] = 0
 				for m in metric_batch.keys():
-					metric[m] += metric_batch[m].mean().item()
+					metric[m] += metric_batch[m].item()
 
 		loss /= len(pbar)
 		if return_metric: 
@@ -151,7 +150,7 @@ class Learner(ABC):
 					pred_batch = self.model(in_batch)
 					loss_batch = self.loss(pred_batch=pred_batch, gt_batch=gt_batch)
 
-				loss += loss_batch.mean().item()
+				loss += loss_batch.item()
 
 				if return_metric: 
 					pred_batch, gt_batch = self.predgt2DOA(pred_batch=pred_batch, gt_batch=gt_batch)
@@ -160,7 +159,7 @@ class Learner(ABC):
 						for m in metric_batch.keys():
 							metric[m] = 0
 					for m in metric_batch.keys():
-						metric[m] += metric_batch[m].mean().item()
+						metric[m] += metric_batch[m].item()
 					idx = idx+1
 
 			loss /= len(dataset)
