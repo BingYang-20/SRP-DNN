@@ -1,9 +1,6 @@
 # SRP-DNN
 A python implementation of “**<a href="https://ieeexplore.ieee.org/document/9746624" target="_blank">SRP-DNN: Learning direct-path phase difference for multiple moving sound source localization</a>**”, IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP), 2022.
 
-+ **Background**
-  - Multiple moving sound source localization in real-world scenarios remains a challenging issue due to interaction between sources, time-varying trajectories, distorted spatial cues, etc. 
-  - More and more works focus on localization in practical noisy and reverberant scenarios, but most of them either localize single moving source which avoids interaction between sources, or localize multiple static sources using long-time microphone signals.
 + **Goal**
   - deals with the problem that the positions and the number of sounding sources are time-varying 
   - timely estimates the locations of competing sources for each required time
