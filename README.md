@@ -5,16 +5,21 @@ A python implementation of “**<a href="https://ieeexplore.ieee.org/document/97
   - Multiple moving sound source localization in real-world scenarios remains a challenging issue due to interaction between sources, time-varying trajectories, distorted spatial cues, etc. 
   - More and more works focus on localization in practical noisy and reverberant scenarios, but most of them either localize single moving source which avoids interaction between sources, or localize multiple static sources using long-time microphone signals.
 + **Goal**
-  - deals with the problem that sources are intermittently sounding and the position of moving sources is time-varying
+  - deals with the problem that the positions and the number of sounding sources are time-varying 
   - timely estimates the locations of competing sources for each required time
-+ **Features** 
++ **Contributions** 
   - **Learning competing and time-varying direct-path inter-channel phase differences (or IPD sequence) for multiple moving sources**
     - Avoids the assignment ambiguity and the problem of uncertain output-dimension encountered when simultaneously predicting multiple targets
-    - exhibits reliable peaks around the actual directions of sources by the constructed spatial spectrum even in the adverse noisy and reverberant scenario
+    - exhibits reliable peaks around the actual directions of sources by the constructed spatial spectrum
   - **Iterative source detection and localization**
     - separates the merged peaks of spatial spectrum caused by the interaction between sources
     - achieves superior performance for the azimuth and elevation estimation of multiple moving sound sources
-  - **Suited for localization with different topologies of microphone array**
++ **Suited cases** 
+  - good or adverse noisy and reverberant scenario
+  - single or multiple sound sources
+  - static or moving source sources
+  - the number of sound sources is known or unknown
+  - different topologies of microphone arrays
         
 
 ## Datasets
