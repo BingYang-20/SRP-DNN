@@ -59,7 +59,7 @@ class CausCnnBlock(nn.Module):
 class CRNN(nn.Module):
 	""" Proposed CRNN model
 	"""
-	def __init__(self, ):
+	def __init__(self, max_num_sources=2):
 		super(CRNN, self).__init__()
 
 		cnn_in_dim = 4
@@ -98,6 +98,7 @@ class CRNN(nn.Module):
 			torch.nn.Linear(in_features=rnn_ndirection * rnn_hid_dim, out_features=rnn_out_dim),  # ,bias=False
 			nn.Tanh(),
 		)
+		self.max_num_sources = max_num_sources
 
 	def forward(self, x):
 		fea = x
@@ -108,7 +109,7 @@ class CRNN(nn.Module):
 		fea_rnn_in = fea_rnn_in.permute(0, 2, 1)  # (nb, nt, nfea)
 
 		fea_rnn, _ = self.rnn(fea_rnn_in)
-		fea_rnn_fc = self.rnn_fc(fea_rnn)*2 # (nb, nt, 2nf) 66,104,512
+		fea_rnn_fc = self.rnn_fc(fea_rnn)*self.max_num_sources # (nb, nt, 2nf) 66,104,512
 		# fea_rnn_fc = torch.zeros((132,104,512)).to(fea.device)
 
 		return fea_rnn_fc

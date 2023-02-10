@@ -49,9 +49,13 @@ if __name__ == "__main__":
 		print('Source state model unrecognized~')
 
 	# Array
-	# array_setup = at_dataset.dualch_array_setup
-	array_setup = at_dataset.benchmark2_array_setup
-	array_locata_name = 'benchmark2'  # Name of the array in the LOCATA dataset
+	array = '12ch'
+	if array == '2ch':
+		array_setup = at_dataset.dualch_array_setup
+		array_locata_name = 'dicit'
+	elif array == '12ch':
+		array_setup = at_dataset.benchmark2_array_setup
+		array_locata_name = 'benchmark2'  # Name of the array in the LOCATA dataset
 
 	# Source signal
 	sourceDataset_train = at_dataset.LibriSpeechDataset(
@@ -172,12 +176,12 @@ if __name__ == "__main__":
 	res_the = 37 # Maps resolution (elevation) 
 	res_phi = 73 # Maps resolution (azimuth) 
 
-	net = at_model.CRNN()
+	net = at_model.CRNN(max_num_sources=int(args.localize_mode[2]))
 	# from torchsummary import summary
 	# summary(net,input_size=(4,256,100),batch_size=55,device="cpu")
 	print('# Parameters:', sum(param.numel() for param in net.parameters())/1000000, 'M')
 
-	learner = at_learner.SourceTrackingFromSTFTLearner(net, win_len=512, win_shift_ratio=0.5, nfft=512, fre_used_ratio=1,
+	learner = at_learner.SourceTrackingFromSTFTLearner(net, win_len=win_len, win_shift_ratio=win_shift_ratio, nfft=nfft, fre_used_ratio=fre_used_ratio,
 				nele=res_the, nazi=res_phi, rn=array_setup.mic_pos, fs=fs, ch_mode = ch_mode, tar_useVAD = tar_useVAD, localize_mode = args.localize_mode) 
 
 	if use_cuda:
@@ -213,10 +217,11 @@ if __name__ == "__main__":
 		for epoch in range(learner.start_epoch, nepoch+1, 1):
 			print('\nEpoch {}/{}:'.format(epoch, nepoch))
 
-			if epoch == 13:
-				print('\nDecreasing SNR')
+			# decrease SNR and LR
+			stable_epoch = 13
+			if (epoch == stable_epoch) | ((epoch>stable_epoch)&(epoch == learner.start_epoch)):
+				print('\nDecreasing SNR and LR')
 				dataset_train.SNR = Parameter(5, 30)  	# Random SNR between 5dB and 30dB after the model has started to converge
-				# args.bz[0] = 10 						# Increase the batch size
 				dataloader_train = torch.utils.data.DataLoader(dataset=dataset_train, batch_size=args.bz[0], shuffle=True, **kwargs)
 				lr = lr/10								# Decrease the learning rate
 
@@ -241,7 +246,6 @@ if __name__ == "__main__":
 			train_writer.add_scalar('metric-MDR', metric_train['MDR'], epoch)
 			train_writer.add_scalar('metric-FAR', metric_train['FAR'], epoch)
 			train_writer.add_scalar('metric-MAE', metric_train['MAE'], epoch)
-			train_writer.add_scalar('lr', lr, epoch)
 			val_writer.add_scalar('loss', loss_val, epoch)
 			val_writer.add_scalar('metric-MDR', metric_val['MDR'], epoch)
 			val_writer.add_scalar('metric-FAR', metric_val['FAR'], epoch)
@@ -250,6 +254,7 @@ if __name__ == "__main__":
 			test_writer.add_scalar('metric-MDR', metric_test['MDR'], epoch)
 			test_writer.add_scalar('metric-FAR', metric_test['FAR'], epoch)
 			test_writer.add_scalar('metric-MAE', metric_test['MAE'], epoch)
+			test_writer.add_scalar('lr', lr, epoch)
 
 			# sys.stdout.flush()
 

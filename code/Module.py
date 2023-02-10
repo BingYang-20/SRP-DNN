@@ -322,11 +322,9 @@ class visDOA(nn.Module):
 		plt.switch_backend('agg')
 		doa_mode = ['Elevation [º]', 'Azimuth [º]']
 		range_mode = [[0, 180], [-180, 180]]
-		style = ['-', ':', '-.', '--']
 
 		num_sources_gt = doa_gt.shape[-1]
 		num_sources_pred = doa_est.shape[-1]
-		legend = []
 		ndoa_mode = len(doa_mode)
 		for doa_mode_idx in range(ndoa_mode):
 			valid_flag_all = np.sum(vad_gt, axis=-1)>0
@@ -342,6 +340,7 @@ class visDOA(nn.Module):
 			doa_pred_v = np.where(valid_flag_pred & valid_flag_all, doa_est, doa_invalid)
 			
 			plt.subplot(ndoa_mode, 1, doa_mode_idx+1)
+			plt.grid(linestyle=":", color="silver")
 			for source_idx in range(num_sources_gt):
 				# plt.plot(time_stamp, doa_gt[:, doa_mode_idx, source_idx], label='GT',
 				# 		color='lightgray', linewidth=3, linestyle=style[0])
@@ -355,8 +354,8 @@ class visDOA(nn.Module):
 				plt_est = plt.scatter(time_stamp, doa_pred_v[:, doa_mode_idx, source_idx],
 						label='EST', c='firebrick', marker='.', linewidth=0.8)
 
-			plt.legend(handles = [plt_gt_silence, plt_gt, plt_est])
 			plt.gca().set_prop_cycle(None)
+			plt.legend(handles = [plt_gt_silence, plt_gt, plt_est])
 			plt.xlabel('Time [s]')
 			plt.ylabel(doa_mode[doa_mode_idx])
 			plt.ylim(range_mode[doa_mode_idx][0],range_mode[doa_mode_idx][1])

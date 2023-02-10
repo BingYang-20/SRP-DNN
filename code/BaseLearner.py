@@ -95,13 +95,10 @@ class Learner(ABC):
 			# add up gradients until optimizer.zero_grad(), multiply a scale to gurantee the gradients equal to that when trajectories_per_gpu_call = trajectories_per_batch
 			if self.use_amp:
 				self.scaler.scale(loss_batch).backward()
-			else:
-				loss_batch.backward()
-
-			if self.use_amp:
 				self.scaler.step(optimizer)
 				self.scaler.update()
 			else:
+				loss_batch.backward()
 				optimizer.step()
 
 			optimizer.zero_grad()

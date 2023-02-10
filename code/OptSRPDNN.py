@@ -34,6 +34,7 @@ class opt():
         # e.g., ['IDL','unkNum', 2], ['IDL','kNum', 1], ['PD','kNum', 1]
         parser.add_argument('--eval-mode', type=str, nargs='+', default=['locata','pred', 'eval'], metavar='EvaluationMode', help='Mode for evaluation (default: LOCATA dataset, Predcition)')
         # e.g., ['locata','pred'], ['locata','eval'], ['simulate', 'all'], ['simulate', 'some']
+        # parser.add_argument('--array', type=str, default='12ch', metavar='ArrayType', help='Type of microphone array (default: 12ch)')
 
         # for training stage
         parser.add_argument('--bz', type=int, nargs='+', default=[1,1,1], metavar='TrainValTestBatch', help='batch size for training, validation and test (default: 1, 1, 5)')
