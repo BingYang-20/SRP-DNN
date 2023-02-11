@@ -8,7 +8,7 @@
 """
 import os
 from OptSRPDNN import opt
-
+ 
 opts = opt()
 args = opts.parse()
 dirs = opts.dir()
@@ -426,9 +426,9 @@ if __name__ == "__main__":
 				save_result_flag = True
 				## adjust parameters and find a tradeoff between MDR and FAR
 				if args.localize_mode[1] == 'unkNum':
-					vad_TH_list = [i for i in np.arange(0.15, 0.25, 0.01)]
+					vad_TH_list = [i for i in np.arange(0.15, 0.25, 0.01)] # [0.21]
 				elif args.localize_mode[1] == 'kNum':
-					vad_TH_list = [0.5]	# [i for i in np.arange(0.2, 0.2, 0.1)]
+					vad_TH_list = [0.5]	
 				nvad_TH = len(vad_TH_list) 
 				dataset_locata = at_dataset.LocataDataset(path_locata, array_locata_name, fs, dev=True, tasks=tasks[0], transforms=[segmenting])
 				nins = len(dataset_locata)

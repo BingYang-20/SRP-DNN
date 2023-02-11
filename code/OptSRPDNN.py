@@ -32,13 +32,13 @@ class opt():
         parser.add_argument('--source-state', type=str, default='mobile', metavar='SourceState', help='State of sources (default: Mobile)')
         parser.add_argument('--localize-mode', type=str, nargs='+', default=['IDL','unkNum', 2], metavar='LocalizeMode', help='Mode for localization (default: Iterative detection and localization method, Unknown source number, Maximum source number is 2)')
         # e.g., ['IDL','unkNum', 2], ['IDL','kNum', 1], ['PD','kNum', 1]
-        parser.add_argument('--eval-mode', type=str, nargs='+', default=['locata','pred', 'eval'], metavar='EvaluationMode', help='Mode for evaluation (default: LOCATA dataset, Predcition)')
+        parser.add_argument('--eval-mode', type=str, nargs='+', default=['locata', 'pred', 'eval'], metavar='EvaluationMode', help='Mode for evaluation (default: LOCATA dataset, Predcition, Evaluation)')
         # e.g., ['locata','pred'], ['locata','eval'], ['simulate', 'all'], ['simulate', 'some']
         # parser.add_argument('--array', type=str, default='12ch', metavar='ArrayType', help='Type of microphone array (default: 12ch)')
 
         # for training stage
         parser.add_argument('--bz', type=int, nargs='+', default=[1,1,1], metavar='TrainValTestBatch', help='batch size for training, validation and test (default: 1, 1, 5)')
-        parser.add_argument('--epochs', type=int, default=100, metavar='Epoch', help='number of epochs to train (default: 100)')
+        parser.add_argument('--epochs', type=int, default=18, metavar='Epoch', help='number of epochs to train (default: 18)')
         parser.add_argument('--lr', type=float, default=0.001, metavar='LR', help='learning rate (default:0.001)')
                    
         args = parser.parse_args()
