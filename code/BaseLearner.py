@@ -86,7 +86,6 @@ class Learner(ABC):
 			if epoch is not None: pbar.set_description('Epoch {}'.format(epoch))
 
 			in_batch, gt_batch = self.data_preprocess(mic_sig_batch, gt_batch)
-			in_batch.requires_grad_()
 
 			with torch.cuda.amp.autocast(enabled=self.use_amp):
 				pred_batch = self.model(in_batch)
@@ -333,7 +332,16 @@ class Learner(ABC):
 			# self.max_score = checkpoint["max_score"]
 			# self.optimizer.load_state_dict(checkpoint["optimizer"])
 			# self.scaler.load_state_dict(checkpoint["scaler"])
-			self.model.load_state_dict(checkpoint["model"])
+			if self.device == "cuda":
+				self.model.load_state_dict(checkpoint["model"])
+			elif self.device == "cpu":
+				ck = {}
+				for key in checkpoint["model"]:
+					key_ = key.replace('module.','')
+					ck[key_] = checkpoint["model"][key]
+				self.model.load_state_dict(ck)
+			else:
+				raise Exception('device is not specified~')
 
 			# if self.rank == 0:
 			print(f"Best model at {epoch} epoch loaded.")

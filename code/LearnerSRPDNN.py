@@ -3,6 +3,7 @@ import torch
 from copy import deepcopy
 from BaseLearner import Learner
 import Module as at_module
+from utils import forgetting_norm
 
 class SourceTrackingFromSTFTLearner(Learner):
 	""" Learner for models which use STFTs of multiple channels as input
@@ -45,13 +46,28 @@ class SourceTrackingFromSTFTLearner(Learner):
 			stft = self.dostft(signal=mic_sig_batch) # (nb,nf,nt,nch)
 			stft = stft.permute(0, 3, 1, 2)  # (nb,nch,nf,nt)
 
+			nor_flag = 'online'
+			if nor_flag=='offline':
+				## offline normalization
+				mag1 = torch.abs(stft[:, 0:1, :, :])
+				mean_value = torch.mean(mag1.reshape(mag1.shape[0], -1), dim=1)
+				mean_value = mean_value[:, np.newaxis, np.newaxis, np.newaxis].expand(mag1.shape)
+				stft = stft/(mean_value+eps)
+			elif nor_flag=='online':
+				## online normalization
+				mag = torch.abs(stft)
+				mean_value = forgetting_norm(mag, num_frame_set=256) # 256 is number of time frames used for training
+				mean_value = mean_value.expand(mag.shape)
+				stft = stft/(mean_value+eps)
+
 			# change batch (nb,nch,nf,nt)→(nb*(nch-1),2,nf,nt)/(nb*(nch-1)*nch/2,2,nf,nt)
 			stft_rebatch = self.addbatch(stft)
 
 			# prepare model input
 			mag = torch.abs(stft_rebatch)
 			mag = torch.log10(mag+eps)
-			phase = torch.angle(stft_rebatch)
+			phase = torch.angle(stft_rebatch) # [-pi/2, pi/2]
+			
 			magphase_batch = torch.cat((mag, phase), dim=1) # (nb*(nch-1),4,nf,nt)
 			data += [magphase_batch[:,:,self.fre_range_used,:]]
 

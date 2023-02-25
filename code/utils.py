@@ -4,6 +4,7 @@ import torch
 import random 
 import pickle
 import soundfile 
+from copy import deepcopy
 
 ## for spherical coordinates
 
@@ -117,44 +118,34 @@ def load_file(acoustic_scene, sig_path, acous_path):
     elif (sig_path is None) & (acous_path is not None):
         return acoustic_scene
 
+def forgetting_norm(input, num_frame_set=None):
+    """
+        Function: Using the mean value of the near frames to normalization
+        Args:
+            input: feature [B, C, F, T]
+            num_frame_set: length of the training time frames, used for calculating smooth factor
+        Returns:
+            normed feature
+        Ref: Online Monaural Speech Enhancement using Delayed Subband LSTM, INTERSPEECH, 2020
+    """
+    assert input.ndim == 4
+    batch_size, num_channels, num_freqs, num_frames = input.size()
+    input = input.reshape(batch_size, num_channels * num_freqs, num_frames)
 
+    if num_frame_set == None:
+        num_frame_set = deepcopy(num_frames)
 
+    mu = 0
+    mu_list = []
+    for frame_idx in range(num_frames):
+        if num_frames<=num_frame_set:
+            alpha = (frame_idx - 1) / (frame_idx + 1)
+        else:
+            alpha = (num_frame_set - 1) / (num_frame_set + 1)
+        current_frame_mu = torch.mean(input[:, :, frame_idx], dim=1).reshape(batch_size, 1) # [B, 1]
+        mu = alpha * mu + (1 - alpha) * current_frame_mu
+        mu_list.append(mu)
+    mu = torch.stack(mu_list, dim=-1) # [B, 1, T]
+    output = mu.reshape(batch_size, 1, 1, num_frames)
 
-# def angular_error_2d(pred, true, doa_mode='azi'):
-# 	""" 2D Angular distance between spherical coordinates.
-# 	"""
-# 	if doa_mode == 'azi':
-# 		ae = torch.abs((pred-true+np.pi)%np.pi-np.pi)
-# 	elif doa_mode == 'ele':
-# 		ae = torch.abs(pred-true)
-
-# 	return  ae
-
-# def angular_error(the_pred, phi_pred, the_true, phi_true):
-# 	""" Angular distance between spherical coordinates.
-# 	"""
-# 	aux = torch.cos(the_true) * torch.cos(the_pred) + \
-# 		  torch.sin(the_true) * torch.sin(the_pred) * torch.cos(phi_true - phi_pred)
-
-# 	return torch.acos(torch.clamp(aux, -0.99999, 0.99999))
-
-
-# def mean_square_angular_error(y_pred, y_true):
-# 	""" Mean square angular distance between spherical coordinates.
-# 	Each row contains one point in format (elevation, azimuth).
-# 	"""
-# 	the_true = y_true[:, 0]
-# 	phi_true = y_true[:, 1]
-# 	the_pred = y_pred[:, 0]
-# 	phi_pred = y_pred[:, 1]
-
-# 	return torch.mean(torch.pow(angular_error(the_pred, phi_pred, the_true, phi_true), 2), -1)
-
-
-# def rms_angular_error_deg(y_pred, y_true):
-# 	""" Root mean square angular distance between spherical coordinates.
-# 	Each input row contains one point in format (elevation, azimuth) in radians
-# 	but the output is in degrees.
-# 	"""
-
-# 	return torch.sqrt(mean_square_angular_error(y_pred, y_true)) * 180 / pi
+    return output

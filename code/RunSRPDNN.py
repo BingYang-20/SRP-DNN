@@ -210,9 +210,9 @@ if __name__ == "__main__":
 		lr = args.lr
 		nepoch = args.epochs
 
-		dataloader_train = torch.utils.data.DataLoader(dataset=dataset_train, batch_size=args.bz[0], shuffle=True, **kwargs)
-		dataloader_val = torch.utils.data.DataLoader(dataset=dataset_val, batch_size=args.bz[1], shuffle=False, **kwargs)
-		dataloader_test = torch.utils.data.DataLoader(dataset=dataset_test, batch_size=args.bz[2], shuffle=False, **kwargs)
+		dataloader_train = torch.utils.data.DataLoader(dataset=dataset_train, batch_size=args.bs[0], shuffle=True, **kwargs)
+		dataloader_val = torch.utils.data.DataLoader(dataset=dataset_val, batch_size=args.bs[1], shuffle=False, **kwargs)
+		dataloader_test = torch.utils.data.DataLoader(dataset=dataset_test, batch_size=args.bs[2], shuffle=False, **kwargs)
 
 		for epoch in range(learner.start_epoch, nepoch+1, 1):
 			print('\nEpoch {}/{}:'.format(epoch, nepoch))
@@ -222,7 +222,7 @@ if __name__ == "__main__":
 			if (epoch == stable_epoch) | ((epoch>stable_epoch)&(epoch == learner.start_epoch)):
 				print('\nDecreasing SNR and LR')
 				dataset_train.SNR = Parameter(5, 30)  	# Random SNR between 5dB and 30dB after the model has started to converge
-				dataloader_train = torch.utils.data.DataLoader(dataset=dataset_train, batch_size=args.bz[0], shuffle=True, **kwargs)
+				dataloader_train = torch.utils.data.DataLoader(dataset=dataset_train, batch_size=args.bs[0], shuffle=True, **kwargs)
 				lr = lr/10								# Decrease the learning rate
 
 			set_random_seed(epoch)
@@ -233,9 +233,9 @@ if __name__ == "__main__":
 			print('Val loss: {:.4f}, Val MDR: {:.2f}%, Val FAR: {:.2f}%, Val MAE: {:.2f}deg'.\
 					format(loss_val, metric_val['MDR']*100, metric_val['FAR']*100, metric_val['MAE']) )
 
-			loss_test, metric_test = learner.test_epoch(dataloader_test, return_metric=True)
-			print('Test loss: {:.4f}, Test MDR: {:.2f}%, Test FAR: {:.2f}%, Test MAE: {:.2f}deg'.\
-					format(loss_test, metric_test['MDR']*100, metric_test['FAR']*100, metric_test['MAE']) )
+			# loss_test, metric_test = learner.test_epoch(dataloader_test, return_metric=True)
+			# print('Test loss: {:.4f}, Test MDR: {:.2f}%, Test FAR: {:.2f}%, Test MAE: {:.2f}deg'.\
+			# 		format(loss_test, metric_test['MDR']*100, metric_test['FAR']*100, metric_test['MAE']) )
 
 			# %% Save model
 			is_best_epoch = learner.is_best_epoch(current_score=loss_val*(-1))
@@ -250,10 +250,10 @@ if __name__ == "__main__":
 			val_writer.add_scalar('metric-MDR', metric_val['MDR'], epoch)
 			val_writer.add_scalar('metric-FAR', metric_val['FAR'], epoch)
 			val_writer.add_scalar('metric-MAE', metric_val['MAE'], epoch)
-			test_writer.add_scalar('loss', loss_test, epoch)
-			test_writer.add_scalar('metric-MDR', metric_test['MDR'], epoch)
-			test_writer.add_scalar('metric-FAR', metric_test['FAR'], epoch)
-			test_writer.add_scalar('metric-MAE', metric_test['MAE'], epoch)
+			# test_writer.add_scalar('loss', loss_test, epoch)
+			# test_writer.add_scalar('metric-MDR', metric_test['MDR'], epoch)
+			# test_writer.add_scalar('metric-FAR', metric_test['FAR'], epoch)
+			# test_writer.add_scalar('metric-MAE', metric_test['MAE'], epoch)
 			test_writer.add_scalar('lr', lr, epoch)
 
 			# sys.stdout.flush()
@@ -304,7 +304,7 @@ if __name__ == "__main__":
 					dataset_test.T60 = Parameter(T60[i])
 					dataset_test.SNR = Parameter(SNR[j])
 					set_random_seed(args.seed)
-					dataloader_test = torch.utils.data.DataLoader(dataset=dataset_test, batch_size=args.bz[2], shuffle=False, **kwargs)
+					dataloader_test = torch.utils.data.DataLoader(dataset=dataset_test, batch_size=args.bs[2], shuffle=False, **kwargs)
 					pred, gt, mic_sig = learner.predict(dataloader_test, return_predgt=True, metric_setting=None, wDNN=True)
 					pred_woDNN, _, = learner.predict(dataloader_test, return_predgt=True, metric_setting=None, wDNN=False)
 
@@ -364,7 +364,7 @@ if __name__ == "__main__":
 			if args.localize_mode[1] == 'unkNum':
 				tasks = [(3,), (5,), (4,), (6,)] 
 			elif args.localize_mode[1] == 'kNum':
-				tasks = [(3,), (5,)]   
+				tasks = [(3,), (5,)] 
 			path_locata = (dirs['sensig_locata'] + '/dev', dirs['sensig_locata'] + '/eval')
 			
 			signal_dir = dirs['log'] + '/signals_LOCATA'
@@ -378,7 +378,7 @@ if __name__ == "__main__":
 			if 'pred' in stage_mode:
 				save_signal_flag = True
 				save_result_flag = True
-				args.bz[2] = 1
+				args.bs[2] = 1
 				args.workers = 0
 				kwargs = {'num_workers': args.workers, 'pin_memory': True}  if use_cuda else {}
 				
@@ -389,7 +389,7 @@ if __name__ == "__main__":
 					for task in tasks:
 						t_start = time.time()
 						dataset_locata = at_dataset.LocataDataset(path_locata, array_locata_name, fs, dev=True, tasks=task, transforms=[segmenting])
-						dataloader = torch.utils.data.DataLoader(dataset=dataset_locata, batch_size=args.bz[2], shuffle=False, **kwargs)
+						dataloader = torch.utils.data.DataLoader(dataset=dataset_locata, batch_size=args.bs[2], shuffle=False, **kwargs)
 						pred, gt, mic_sig = learner.predict(dataloader, return_predgt=True, metric_setting=None, wDNN=True)
 						t_end = time.time()
 
@@ -426,7 +426,7 @@ if __name__ == "__main__":
 				save_result_flag = True
 				## adjust parameters and find a tradeoff between MDR and FAR
 				if args.localize_mode[1] == 'unkNum':
-					vad_TH_list = [i for i in np.arange(0.15, 0.25, 0.01)] # [0.21]
+					vad_TH_list = [i for i in np.arange(0.1, 0.6, 0.01)] # 0.38
 				elif args.localize_mode[1] == 'kNum':
 					vad_TH_list = [0.5]	
 				nvad_TH = len(vad_TH_list) 

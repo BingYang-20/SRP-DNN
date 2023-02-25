@@ -37,7 +37,7 @@ class opt():
         # parser.add_argument('--array', type=str, default='12ch', metavar='ArrayType', help='Type of microphone array (default: 12ch)')
 
         # for training stage
-        parser.add_argument('--bz', type=int, nargs='+', default=[1,1,1], metavar='TrainValTestBatch', help='batch size for training, validation and test (default: 1, 1, 5)')
+        parser.add_argument('--bs', type=int, nargs='+', default=[1,1,1], metavar='TrainValTestBatch', help='batch size for training, validation and test (default: 1, 1, 5)')
         parser.add_argument('--epochs', type=int, default=18, metavar='Epoch', help='number of epochs to train (default: 18)')
         parser.add_argument('--lr', type=float, default=0.001, metavar='LR', help='learning rate (default:0.001)')
                    
@@ -61,7 +61,7 @@ class opt():
         # dirs['data'] = work_dir + '/data'
         dirs['gerdata'] = work_dir + '/SRP-DNN/data'
         dirs['exp'] = work_dir + '/SRP-DNN/exp'
-
+        
         # signal data
         dirs['sousig_train'] = dirs['data'] + '/SouSig/LibriSpeech/train-clean-100'
         dirs['sousig_val'] = dirs['data'] + '/SouSig/LibriSpeech/dev-clean'
