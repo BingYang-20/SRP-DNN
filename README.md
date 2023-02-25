@@ -38,14 +38,14 @@ A python implementation of “**<a href="https://ieeexplore.ieee.org/document/97
 + **Evaluation**
   - use GPU
   ```
-  python RunSRPDNN.py --test --gpu-id [*] --time 00000000 --eval-mode locata pred eval (--use-amp)
+  python RunSRPDNN.py --test --gpu-id [*] --time 00000001 --eval-mode locata pred eval (--use-amp)
   ```
   - use CPU
   ```
-  python RunSRPDNN.py --test --no-cuda --time 00000000 --eval-mode locata pred eval (--use-amp)
+  python RunSRPDNN.py --test --no-cuda --time 00000001 --eval-mode locata pred eval (--use-amp)
   ```
 + **Pretrained models**
-  - exp/00000000/best_model.tar 
+  - exp/00000001/best_model.tar 
 
 ## Citation
 If you find our work useful in your research, please consider citing:
