@@ -345,14 +345,14 @@ class visDOA(nn.Module):
 				# plt.plot(time_stamp, doa_gt[:, doa_mode_idx, source_idx], label='GT',
 				# 		color='lightgray', linewidth=3, linestyle=style[0])
 				plt_gt_silence = plt.scatter(time_stamp, doa_gt_silence_v[:, doa_mode_idx, source_idx],
-						label='GT_silence', c='whitesmoke', marker='.', linewidth=1)
+						label='GT_silence', c='whitesmoke', marker='.', linewidth=1, zorder=10)
 
 				plt_gt = plt.scatter(time_stamp, doa_gt_v[:, doa_mode_idx, source_idx],
-						label='GT', c='lightgray', marker='o', linewidth=1.5)
+						label='GT', c='lightgray', marker='o', linewidth=1.5, zorder=11)
 
 			for source_idx in range(num_sources_pred):
 				plt_est = plt.scatter(time_stamp, doa_pred_v[:, doa_mode_idx, source_idx],
-						label='EST', c='firebrick', marker='.', linewidth=0.8)
+						label='EST', c='firebrick', marker='.', linewidth=0.8, zorder=12)
 
 			plt.gca().set_prop_cycle(None)
 			plt.legend(handles = [plt_gt_silence, plt_gt, plt_est])

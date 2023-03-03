@@ -66,7 +66,7 @@ def get_learning_rate(optimizer):
 def set_learning_rate(epoch, lr_init, step, gamma):
     """ Function: adjust learning rates 
     """ 
-    lr = lr_init*pow(gamma, int(epoch/step))
+    lr = lr_init*pow(gamma, epoch/step)
     return lr
 
 ## for data number

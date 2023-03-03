@@ -38,7 +38,7 @@ class opt():
 
         # for training stage
         parser.add_argument('--bs', type=int, nargs='+', default=[1,1,1], metavar='TrainValTestBatch', help='batch size for training, validation and test (default: 1, 1, 5)')
-        parser.add_argument('--epochs', type=int, default=18, metavar='Epoch', help='number of epochs to train (default: 18)')
+        parser.add_argument('--epochs', type=int, default=20, metavar='Epoch', help='number of epochs to train (default: 18)')
         parser.add_argument('--lr', type=float, default=0.001, metavar='LR', help='learning rate (default:0.001)')
                    
         args = parser.parse_args()

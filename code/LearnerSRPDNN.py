@@ -176,7 +176,7 @@ class SourceTrackingFromSTFTLearner(Learner):
 
 		return pred_batch, gt_batch 
 
-	def evaluate(self, pred, gt, metric_setting={'ae_mode':['azi'], 'ae_TH':30, 'useVAD':True, 'vad_TH':[2/3, 0.2], 'metric_unfold':False} ):
+	def evaluate(self, pred, gt, metric_setting={'ae_mode':['azi'], 'ae_TH':30, 'useVAD':True, 'vad_TH':[2/3, 0.3], 'metric_unfold':False} ):
 		""" Function: Evaluate DOA estimation results
 			Args:
 				pred 	- dict{'doa', 'vad_sources'}

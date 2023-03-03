@@ -27,7 +27,7 @@ import LearnerSRPDNN as at_learner
 import ModelSRPDNN as at_model
 import Module as at_module
 from Dataset import Parameter
-from utils import set_seed, set_random_seed
+from utils import set_seed, set_random_seed, set_learning_rate
 
 if __name__ == "__main__":
 	use_cuda = not args.no_cuda and torch.cuda.is_available()
@@ -131,7 +131,7 @@ if __name__ == "__main__":
 		array_setup = array_setup,
 		array_pos = Parameter([0.1,0.1,0.1], [0.9,0.9,0.5]), # Ensure a minimum separation between the array and the walls
 		noiseDataset = noiseDataset_train,
-		SNR = Parameter(30), 	
+		SNR = Parameter(5, 30), 	
 		nb_points = traj_points,	
 		dataset_sz= 1000,
 		c = speed, 
@@ -207,7 +207,6 @@ if __name__ == "__main__":
 		test_writer = SummaryWriter(dirs['log'] + '/test/', 'test')
 
 		# %% Network training
-		lr = args.lr
 		nepoch = args.epochs
 
 		dataloader_train = torch.utils.data.DataLoader(dataset=dataset_train, batch_size=args.bs[0], shuffle=True, **kwargs)
@@ -217,13 +216,7 @@ if __name__ == "__main__":
 		for epoch in range(learner.start_epoch, nepoch+1, 1):
 			print('\nEpoch {}/{}:'.format(epoch, nepoch))
 
-			# decrease SNR and LR
-			stable_epoch = 13
-			if (epoch == stable_epoch) | ((epoch>stable_epoch)&(epoch == learner.start_epoch)):
-				print('\nDecreasing SNR and LR')
-				dataset_train.SNR = Parameter(5, 30)  	# Random SNR between 5dB and 30dB after the model has started to converge
-				dataloader_train = torch.utils.data.DataLoader(dataset=dataset_train, batch_size=args.bs[0], shuffle=True, **kwargs)
-				lr = lr/10								# Decrease the learning rate
+			lr = set_learning_rate(epoch=epoch-1, lr_init=args.lr, step=args.epochs, gamma=0.05)
 
 			set_random_seed(epoch)
 			loss_train, metric_train = learner.train_epoch(dataloader_train, lr=lr, epoch=epoch, return_metric=True)
@@ -256,7 +249,6 @@ if __name__ == "__main__":
 			# test_writer.add_scalar('metric-MAE', metric_test['MAE'], epoch)
 			test_writer.add_scalar('lr', lr, epoch)
 
-			# sys.stdout.flush()
 
 		print('\nTraining finished\n')
 
@@ -268,7 +260,7 @@ if __name__ == "__main__":
 		source_num_mode = args.localize_mode[1]
 		
 		# Metric
-		metric_setting = {'ae_mode':['azi', 'ele'], 'ae_TH':30, 'useVAD':True, 'vad_TH':[2/3, 0.2],'metric_unfold':True}
+		metric_setting = {'ae_mode':['azi', 'ele'], 'ae_TH':30, 'useVAD':True, 'vad_TH':[2/3, 0.3],'metric_unfold':True}
 		nmetric = 3 + len(metric_setting['ae_mode']) * 2
 
 		# Load model
@@ -426,7 +418,7 @@ if __name__ == "__main__":
 				save_result_flag = True
 				## adjust parameters and find a tradeoff between MDR and FAR
 				if args.localize_mode[1] == 'unkNum':
-					vad_TH_list = [i for i in np.arange(0.1, 0.6, 0.01)] # 0.38
+					vad_TH_list = [i for i in np.arange(0.1, 0.6, 0.01)] # 0.35
 				elif args.localize_mode[1] == 'kNum':
 					vad_TH_list = [0.5]	
 				nvad_TH = len(vad_TH_list) 
