@@ -5,14 +5,14 @@ import scipy
 import scipy.io
 import scipy.signal
 import random
-# import librosa
+# import librosa # for data generation, test which one (scipy.signal.resample_poly, librosa.resample) is faster
 import soundfile
 import pandas
 import warnings
 from copy import deepcopy
 from collections import namedtuple
 from torch.utils.data import Dataset
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 # from matplotlib import animation
 import webrtcvad
 import gpuRIR
@@ -295,6 +295,7 @@ class AcousticScene:
 		mic_signals_sources = []
 		dp_RIRs_sources = []
 		dp_mic_signals_sources = []
+		nsample = len(self.t)
 		for source_idx in range(num_source):
 			# RIRs_list = [ 	gpuRIR.simulateRIR(self.room_sz, self.beta,
 			# 				self.traj_pts[traj_pts_batch[0]:traj_pts_batch[1],:,source_idx], self.mic_pos,
@@ -310,19 +311,19 @@ class AcousticScene:
 						nb_img, Tmax, self.fs, Tdiff=Tdiff, orV_rcv=self.array_setup.mic_orV, 
 						mic_pattern=self.array_setup.mic_pattern)
 			mic_sig = gpuRIR.simulateTrajectory(self.source_signal[:,source_idx], RIRs, timestamps=self.timestamps, fs=self.fs)
-			mic_sig = mic_sig[0:len(self.t),:]
+			mic_sig = mic_sig[0:nsample,:]
 
 			dp_RIRs = gpuRIR.simulateRIR(self.room_sz, self.beta, self.traj_pts[:,:,source_idx], self.mic_pos, [1,1,1],
 							0.1, self.fs, orV_rcv=self.array_setup.mic_orV, mic_pattern=self.array_setup.mic_pattern)
 			dp_mic_sig = gpuRIR.simulateTrajectory(self.source_signal[:,source_idx], dp_RIRs, timestamps=self.timestamps, fs=self.fs)
-			dp_mic_sig = dp_mic_sig[0:len(self.t),:]
+			dp_mic_sig = dp_mic_sig[0:nsample,:]
 
 			RIRs_sources += [RIRs]
 			mic_signals_sources += [mic_sig]
 			dp_RIRs_sources += [dp_RIRs]
 			dp_mic_signals_sources += [dp_mic_sig]
 
-		RIRs_sources = np.array(RIRs_sources).transpose(1,2,3,0) # (npoints,nch,nsamples,nsources)
+		RIRs_sources = np.array(RIRs_sources).transpose(1,2,3,0) # (npoints,nch,nsam,nsources)
 		mic_signals_sources = np.array(mic_signals_sources).transpose(1,2,0) # (nsamples,nch,nsources)
 		dp_RIRs_sources = np.array(dp_RIRs_sources).transpose(1,2,3,0)
 		dp_mic_signals_sources = np.array(dp_mic_signals_sources).transpose(1,2,0)
@@ -335,7 +336,7 @@ class AcousticScene:
 		ac_pow = np.mean([acoustic_power(dp_mic_signals[:,i]) for i in range(dp_mic_signals_sources.shape[1])])
 		ac_pow_noise = np.mean([acoustic_power(self.noise_signal[:,i]) for i in range(self.noise_signal.shape[1])])
 		noise_signal = np.sqrt(ac_pow/10**(self.SNR/10)) / np.sqrt(ac_pow_noise) * self.noise_signal
-		mic_signals += noise_signal[0:len(self.t), :]
+		mic_signals += noise_signal[0:nsample, :]
 
 		# Apply the propagation delay to the VAD information if it exists
 		if hasattr(self, 'source_vad'):
@@ -343,7 +344,7 @@ class AcousticScene:
 			for source_idx in range(num_source):
 				vad = gpuRIR.simulateTrajectory(self.source_vad[:,source_idx], dp_RIRs_sources[:,:,:,source_idx],
 												timestamps=self.timestamps, fs=self.fs)
-				vad_sources = vad[0:len(self.t),:].mean(axis=1) > vad[0:len(self.t),:].max()*1e-3
+				vad_sources = vad[0:nsample,:].mean(axis=1) > vad[0:nsample,:].max()*1e-3
 				self.mic_vad_sources += [vad_sources] # binary value
 			self.mic_vad_sources = np.array(self.mic_vad_sources).transpose(1,0) # (nsample, nsources)
 			self.mic_vad = np.sum(self.mic_vad_sources, axis=1)>0.5 # for vad of mixed sensor signals of sources (nsample)
@@ -528,13 +529,10 @@ class NoiseDataset():
 		elif noise_type == 'diffuse':
 			idx = random.randint(0, len(self.path_set)-1)
 			noise, fs = soundfile.read(self.path_set[idx])
-			if fs != self.fs:
-				noise = scipy.signal.resample(noise, int(len(noise)/fs*self.fs))
-				# noise = librosa.resample(noise, orig_sr = fs, target_sr = self.fs)
-			
-			nsample_desired = int(self.T * self.fs * self.nmic)
-			noise_copy = deepcopy(noise)
-			nsample = noise.shape[0]
+
+			nsample_desired = int(self.T * fs * self.nmic)
+			noise_copy = copy.deepcopy(noise)
+			nsample = noise_copy.shape[0]
 			while nsample < nsample_desired:
 				noise_copy = np.concatenate((noise_copy, noise), axis=0)
 				nsample = noise_copy.shape[0]
@@ -543,7 +541,13 @@ class NoiseDataset():
 			ed = st + nsample_desired
 			noise_copy = noise_copy[st:ed]
 
+			if fs != self.fs:
+				noise_copy = scipy.signal.resample_poly(noise_copy, up=self.fs, down=fs)
+				# noise_copy2 = scipy.signal.resample(noise_copy, int(len(noise_copy)/fs*self.fs))
+				# noise_copy = librosa.resample(noise_copy, orig_sr = fs, target_sr = self.fs)
+
 			noise_signal = self.gen_diffuse_noise(noise_copy, self.T, self.fs, mic_pos, c=self.c)
+			noise_signal = noise_signal/(np.max(noise_signal)+eps)
 
 		elif noise_type == 'real_world': # the array topology should be consistent
 			idx = random.randint(0, len(self.path_set)-1)
@@ -551,12 +555,9 @@ class NoiseDataset():
 			nmic = noise.shape[-1]
 			if nmic != self.nmic:
 				raise Exception('Unexpected number of microphone channels')
-			if fs != self.fs:
-				noise = scipy.signal.resample(noise, int(noise.shape[0]/fs*self.fs), axis=0)
-				# noise = librosa.resample(noise.transpose(1,0), orig_sr = fs, target_sr = self.fs).transpose(1,0)
-			
-			nsample_desired = int(self.T * self.fs)
-			noise_copy = deepcopy(noise)
+		
+			nsample_desired = int(self.T * fs)
+			noise_copy = copy.deepcopy(noise)
 			nsample = noise.shape[0]
 			while nsample < nsample_desired:
 				noise_copy = np.concatenate((noise_copy, noise), axis=0)
@@ -564,7 +565,13 @@ class NoiseDataset():
 
 			st = random.randint(0, nsample - nsample_desired)
 			ed = st + nsample_desired
-			noise_signal = noise_copy[st:ed, :]
+			noise_copy = noise_copy[st:ed, :]
+
+			if fs != self.fs:
+				noise_signal = scipy.signal.resample_poly(noise_copy, up=self.fs, down=fs)
+				# noise_signal = scipy.signal.resample(noise_copy, int(noise_copy.shape[0]/fs*self.fs), axis=0)
+				# noise_signal = librosa.resample(noise_copy.transpose(1,0), orig_sr = fs, target_sr = self.fs).transpose(1,0)
+			noise_signal = noise_signal/(np.max(noise_signal)+eps)
 
 		else:
 			raise Exception('Unknown noise type specified')
@@ -601,36 +608,64 @@ class NoiseDataset():
 			noise_M[:, m] = noise[m*L:(m+1)*L]
 
 		# Generate matrix with desired spatial coherence
-		ww = 2*math.pi*self.fs*np.array([i for i in range(nfft//2+1)])/nfft
-		DC = np.zeros([M, M, nfft//2+1])
-		for p in range(0,M):
-			for q in range(0,M):
-				if p == q:
-					DC[p,q,:] = np.ones([1,1,nfft//2+1])
-				else:
-					dist = np.linalg.norm(mic_pos[p,:]-mic_pos[q,:])
-					if type_nf == 'spherical':
-						DC[p,q,:] = np.sinc(ww*dist/(c*math.pi))
-					elif type_nf == 'cylindrical':
-						DC[p,q,:] = scipy.special(0,ww*dist/c)
-					else:
-						raise Exception('Unknown noise field')
+		w_rad = 2*math.pi*self.fs*np.array([i for i in range(nfft//2+1)])/nfft
+		DC = self.gen_desired_spatial_coherence(mic_pos, type_nf, c, w_rad)
 
 		# Generate sensor signals with desired spatial coherence
 		noise_signal = self.mix_signals(noise_M, DC)
 
+		# # Plot desired and generated spatial coherence
+		# self.sc_test(DC, noise_signal, mic_idxes=[0, 1])
+
 		return noise_signal
+	
+	def gen_desired_spatial_coherence(self, mic_pos, type_nf, c, w_rad):
+		"""
+			mic_pos: relative positions of mirophones  (nmic, 3)
+			type_nf: type of noise field, 'spherical' or 'cylindrical'
+			c: speed of sound
+			w_rad: angular frequency in radians
+		"""
+		M = mic_pos.shape[0]
+		# Generate matrix with desired spatial coherence
+		nf = len(w_rad)
+		DC = np.zeros([M, M, nf])
+
+		# dist = np.linalg.norm(mic_pos[:, np.newaxis, :] - mic_pos[np.newaxis, :, :], axis=-1, keepdims=True)
+		# if type_nf == 'spherical':
+		# 	DC = np.sinc(w_rad * dist / (c * math.pi))
+		# elif type_nf == 'cylindrical':
+		# 	DC = scipy.special(0, w_rad * dist / c)
+		# else:
+		# 	raise Exception('Unknown noise field')
+
+		for p in range(0,M):
+			for q in range(0,M):
+				if p == q:
+					DC[p, q, :] = np.ones([1, 1, nf])
+				else:
+					dist = np.linalg.norm(mic_pos[p, :] - mic_pos[q, :])
+					if type_nf == 'spherical':
+						DC[p, q, :] = np.sinc(w_rad*dist/(c*math.pi))
+					elif type_nf == 'cylindrical':
+						DC[p, q, :] = scipy.special(0, w_rad*dist/c)
+					else:
+						raise Exception('Unknown noise field')
+		return DC
 
 	def mix_signals(self, noise, DC, method='cholesky'):
 		""" Reference:  E. A. P. Habets, “Arbitrary noise field generator.” https://github.com/ehabets/ANF-Generator
+			noise: noise signals (nsample, nch)
+			DC: desired spatial coherence (nch, nch, nf)
+			x: diffuse noise (nsample, nch)
+			Note: generated spatial cohenence: cholesky is better than eigen
+				sound unnaturality of sensors signals: cholesky is worse than eigen		  
 		"""
-		M = noise.shape[1] # Number of sensors
 		K = (DC.shape[2]-1)*2 # Number of frequency bins
 
 		# Compute short-time Fourier transform (STFT) of all input signals
-		noise = np.vstack([np.zeros([K//2,M]), noise, np.zeros([K//2,M])])
 		noise = noise.transpose()
-		f, t, N = scipy.signal.stft(noise,window='hann', nperseg=K, noverlap=0.75*K, nfft=K)
+		f, t, N = scipy.signal.stft(noise, window='hann', nperseg=K, noverlap=0.75*K, nfft=K)
 
 		# Generate output in the STFT domain for each frequency bin k
 		X = np.zeros(N.shape,dtype=complex)
@@ -639,25 +674,45 @@ class NoiseDataset():
 				C = scipy.linalg.cholesky(DC[:,:,k])
 			elif method == 'eigen': # Generated cohernce and noise signal are slightly different from MATLAB version
 				D, V = np.linalg.eig(DC[:,:,k])
-				ind = np.argsort(D)
-				D = D[ind]
-				D = np.diag(D)
-				V = V[:, ind]
-				C = np.matmul(np.sqrt(D), V.T)
+				# ind = np.argsort(D)
+				# D = D[ind]
+				# D = np.diag(D)
+				# V = V[:, ind]
+				# C = np.matmul(np.sqrt(D), V.T)
+				C = V.T * np.sqrt(D)[:, np .newaxis]
 			else:
 				raise Exception('Unknown method specified')
 
 			X[:,k,:] = np.dot(np.squeeze(N[:,k,:]).transpose(),np.conj(C)).transpose()
 
 		# Compute inverse STFT
-		F, x = scipy.signal.istft(X,window='hann',nperseg=K,noverlap=0.75*K, nfft=K)
-		x = x.transpose()[K//2:-K//2,:]
+		F, df_noise = scipy.signal.istft(X,window='hann', nperseg=K, noverlap=0.75*K, nfft=K)
+		df_noise = df_noise.transpose()
 
-		return x
+		return df_noise
+	
+	def sc_test(self, DC, df_noise, mic_idxes):
+		dc = DC[mic_idxes[0], mic_idxes[1], :]
+		noise = df_noise[:, mic_idxes].transpose()
+
+		nfft = (DC.shape[2]-1)*2
+		f, t, X = scipy.signal.stft(noise, window='hann', nperseg=nfft, noverlap=0.75*nfft, nfft=nfft)  # X: [M,F,T]
+		phi_x = np.mean(np.abs(X)**2, axis=2)
+		psi_x = np.mean(X[0, :, :] * np.conj(X[1, :, :]), axis=-1)
+		sc_generated = np.real(psi_x / np.sqrt(phi_x[[0], :] * phi_x[[1], :]))
+
+		sc_theory = dc[np.newaxis, :]
+
+		plt.switch_backend('agg')
+		plt.plot(list(range(nfft // 2 + 1)), sc_theory[0, :])
+		plt.plot(list(range(nfft // 2 + 1)), sc_generated[0, :])
+		plt.title(str(1))
+		# plt.show()
+		plt.savefig('sc')
 
 
-## %% Trajectory Datasets
-class FixTrajectoryDataset(Dataset):
+## %% Microphone Signal Datasets
+class FixMicSigDataset(Dataset):
 	"""
 	"""
 	def __init__(self, data_dir, dataset_sz, transforms=None, return_acoustic_scene=False):
@@ -715,11 +770,10 @@ class FixTrajectoryDataset(Dataset):
 
 			return mic_signals, gts
 
-class RandomTrajectoryDataset(Dataset):
-	""" Dataset Acoustic Scenes with random trajectories.
-	The length of the dataset is the length of the source signals dataset.
+class RandomMicSigDataset(Dataset):
+	""" Dataset Acoustic Scenes with random trajectories (online generated RIR).
 	"""
-	def __init__(self, sourceDataset, num_source, source_state, room_sz, T60, abs_weights, array_setup, array_pos, noiseDataset, SNR, nb_points, dataset_sz, c=343.0, transforms=None, return_acoustic_scene=False):
+	def __init__(self, sourceDataset, num_source, source_state, room_sz, T60, abs_weights, array_setup, array_pos, noiseDataset, SNR, nb_points, dataset_sz, c=343.0, transforms=None, return_acoustic_scene=False, save_src_noi=False):
 		"""
 		sourceDataset: dataset with the source signals (such as LibriSpeechDataset)
 		num_source: Number of sources
@@ -762,6 +816,7 @@ class RandomTrajectoryDataset(Dataset):
 
 		self.transforms = transforms
 		self.return_acoustic_scene = return_acoustic_scene
+		self.save_src_noi = save_src_noi
 
 	def __len__(self):
 		return self.dataset_sz #len(self.sourceDataset)
@@ -771,6 +826,13 @@ class RandomTrajectoryDataset(Dataset):
 
 		acoustic_scene = self.getRandomScene(idx)
 		mic_signals = acoustic_scene.simulate()
+
+		if self.save_src_noi == False:
+			acoustic_scene.source_signal = []
+			acoustic_scene.noise_signal = []
+			acoustic_scene.timestamps = []
+			acoustic_scene.t = []
+			acoustic_scene.trajectory = []
 
 		if self.transforms is not None:
 			for t in self.transforms:
@@ -786,9 +848,6 @@ class RandomTrajectoryDataset(Dataset):
 			return mic_signals, gts
 
 	def getRandomScene(self, idx):
-		# Sources
-		source_signal, vad = self.sourceDataset[self.sourceDataset_idx.getValue()]
-		num_source = self.num_source.getValue()
 
 		# Room
 		room_sz = self.room_sz.getValue()
@@ -806,10 +865,10 @@ class RandomTrajectoryDataset(Dataset):
 			mic_pos = self.array_setup.mic_pos,
 			mic_orV = self.array_setup.mic_orV,
 			mic_pattern = self.array_setup.mic_pattern 
-		)		
-		# Noises
-		noise_signal = self.noiseDataset.get_random_noise(self.array_setup.mic_pos*mic_scale)
-		SNR = self.SNR.getValue()
+		)	
+		
+		# Sources
+		num_source = self.num_source.getValue()
 
 		# Trajectory points
 		src_pos_min = np.array([0.0, 0.0, 0.0])
@@ -821,12 +880,7 @@ class RandomTrajectoryDataset(Dataset):
 				src_pos_max[np.nonzero(self.array_setup.orV)] = array_pos[np.nonzero(self.array_setup.orV)]
 			# src_pos_min[np.nonzero(self.array_setup.orV)] += self.dis.getValue() # control the distance between sources and array
 
-		timestamps = np.arange(self.nb_points) * len(source_signal) / self.fs / self.nb_points
-		t = np.arange(len(source_signal)) / self.fs
 		traj_pts = np.zeros((self.nb_points, 3, num_source))
-		trajectory = np.zeros((len(t), 3, num_source))
-		DOA = np.zeros((len(t), 2, num_source))
-
 		for source_idx in range(num_source):
 			if self.source_state == 'static':
 				src_pos = src_pos_min + np.random.random(3) * (src_pos_max - src_pos_min)
@@ -852,9 +906,20 @@ class RandomTrajectoryDataset(Dataset):
 					traj_pts[:,:,source_idx] = np.ones((self.nb_points,1)) * src_pos_ini
 				# traj_pts[:,2,source_idx] = array_pos[2] # if sources and array are in the same horizontal plane
 
-			# Interpolate trajectory points
-			trajectory[:,:,source_idx]  = np.array([np.interp(t, timestamps, traj_pts[:,i,source_idx]) for i in range(3)]).transpose()
+		# Source signals	
+		source_signal, vad = self.sourceDataset[self.sourceDataset_idx.getValue()]
 
+		# Noise signals
+		noise_signal = self.noiseDataset.get_random_noise(self.array_setup.mic_pos*mic_scale)
+		SNR = self.SNR.getValue()
+
+		# Interpolate trajectory points
+		timestamps = np.arange(self.nb_points) * len(source_signal) / self.fs / self.nb_points
+		t = np.arange(len(source_signal)) / self.fs
+		trajectory = np.zeros((len(t), 3, num_source))
+		DOA = np.zeros((len(t), 2, num_source))
+		for source_idx in range(num_source):
+			trajectory[:,:,source_idx]  = np.array([np.interp(t, timestamps, traj_pts[:,i,source_idx]) for i in range(3)]).transpose()
 			DOA[:,:,source_idx] = cart2sph(trajectory[:,:,source_idx] - array_pos)[:, 1:3]
 
 		acoustic_scene = AcousticScene(
@@ -1075,7 +1140,6 @@ class LocataDataset(Dataset):
 		acoustic_scene.mic_vad_sources = deepcopy(vad) # (nsample, nsource)
 		acoustic_scene.mic_vad = np.sum(vad, axis=1)>0.5 # for vad of mixed sensor signals of source
 		
-		mic_signals.transpose()
 		if self.transforms is not None:
 			for t in self.transforms:
 				mic_signals, acoustic_scene = t(mic_signals, acoustic_scene)

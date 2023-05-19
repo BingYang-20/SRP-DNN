@@ -149,3 +149,53 @@ def forgetting_norm(input, num_frame_set=None):
     output = mu.reshape(batch_size, 1, 1, num_frames)
 
     return output
+
+
+def save_file(mic_signal, acoustic_scene, sig_path, acous_path):
+    
+    if sig_path is not None:
+        soundfile.write(sig_path, mic_signal, acoustic_scene.fs)
+
+    if acous_path is not None:
+        file = open(acous_path,'wb')
+        file.write(pickle.dumps(acoustic_scene.__dict__))
+        file.close()
+
+    # data_path = save_dir+'/'+name+'.mat'
+	# scipy.io.savemat(data_path, {'mic_signals': mic_signals, 'acoustic_scene': acoustic_scene})
+
+
+def load_file(acoustic_scene, sig_path, acous_path):
+
+    if sig_path is not None:
+        mic_signal, fs = soundfile.read(sig_path)
+
+    if acous_path is not None:
+        file = open(acous_path,'rb')
+        dataPickle = file.read()
+        file.close()
+        acoustic_scene.__dict__ = pickle.loads(dataPickle)
+
+    if (sig_path is not None) & (acous_path is not None):
+        return mic_signal, acoustic_scene
+    elif (sig_path is not None) & (acous_path is None):
+        return mic_signal
+    elif (sig_path is None) & (acous_path is not None):
+        return acoustic_scene
+
+    ## When reading mat file, the array_setup cannot present normally
+    # data = scipy.io.loadmat(load_dir+'/'+name+'.mat')
+	# mic_signals = data['mic_signals']
+	# acoustic_scene0 =data['acoustic_scene'][0,0]
+	# keys = acoustic_scene0.dtype.names
+    # for idx in range(len(keys)):
+	# 	key = keys[idx]
+	# 	value = acoustic_scene0[key]
+	# 	sh = value.shape
+	# 	if len(sh)==2:
+	# 		if (sh[0]==1) & (sh[1]==1):
+	# 			value = value[0,0]
+	# 		elif (sh[0]==1) & (sh[1]>1):
+	# 			value = value[0,:]
+	# 	print(key ,value)
+	# 	acoustic_scene.__dict__[key] = value

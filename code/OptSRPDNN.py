@@ -35,9 +35,10 @@ class opt():
         parser.add_argument('--eval-mode', type=str, nargs='+', default=['locata', 'pred', 'eval'], metavar='EvaluationMode', help='Mode for evaluation (default: LOCATA dataset, Predcition, Evaluation)')
         # e.g., ['locata','pred'], ['locata','eval'], ['simulate', 'all'], ['simulate', 'some']
         # parser.add_argument('--array', type=str, default='12ch', metavar='ArrayType', help='Type of microphone array (default: 12ch)')
+        parser.add_argument('--gen_on_the_fly', action='store_true', default=False, help='Generate microphone signals on-the-fly (default: False)')
 
         # for training stage
-        parser.add_argument('--bs', type=int, nargs='+', default=[1,1,1], metavar='TrainValTestBatch', help='batch size for training, validation and test (default: 1, 1, 5)')
+        parser.add_argument('--bs', type=int, nargs='+', default=[1,1,1], metavar='TrainValTestBatch', help='batch size for training, validation and test (default: 1, 1, 1)')
         parser.add_argument('--epochs', type=int, default=20, metavar='Epoch', help='number of epochs to train (default: 18)')
         parser.add_argument('--lr', type=float, default=0.001, metavar='LR', help='learning rate (default:0.001)')
                    
@@ -67,9 +68,14 @@ class opt():
         dirs['sousig_val'] = dirs['data'] + '/SouSig/LibriSpeech/dev-clean'
         dirs['sousig_test'] = dirs['data'] + '/SouSig/LibriSpeech/test-clean'
         dirs['sensig_locata'] = dirs['data'] + '/SenSig/LOCATA'
-        # dirs['noisig_train'] = dirs['data'] + '/NoiSig/NOISEX-92'
-        # dirs['noisig_val'] = dirs['data'] + '/NoiSig/NOISEX-92'
-        # dirs['noisig_test'] = dirs['data'] + '/NoiSig/NOISEX-92'
+
+        dirs['noisig_train'] = dirs['data'] + '/NoiSig/NOISEX-92'
+        dirs['noisig_val'] = dirs['data'] + '/NoiSig/NOISEX-92'
+        dirs['noisig_test'] = dirs['data'] + '/NoiSig/NOISEX-92'
+
+        dirs['sensig_train'] = dirs['gerdata'] + '/SenSig-train'
+        dirs['sensig_val'] = dirs['gerdata'] + '/SenSig-val'
+        dirs['sensig_test'] = dirs['gerdata'] + '/SenSig-test'
 
         # experimental data
         dirs['log'] = dirs['exp'] + '/' + self.time

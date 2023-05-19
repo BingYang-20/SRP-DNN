@@ -44,7 +44,7 @@ if __name__ == "__main__":
 	if args.source_state == 'static':
 		traj_points = 1 # number of RIRs per trajectory
 	elif args.source_state == 'mobile':
-		traj_points = 156 # number of RIRs per trajectory
+		traj_points = int(10*T) # number of RIRs per trajectory
 	else:
 		print('Source state model unrecognized~')
 
@@ -57,51 +57,52 @@ if __name__ == "__main__":
 		array_setup = at_dataset.benchmark2_array_setup
 		array_locata_name = 'benchmark2'  # Name of the array in the LOCATA dataset
 
-	# Source signal
-	sourceDataset_train = at_dataset.LibriSpeechDataset(
-		path = dirs['sousig_train'], 
-		T = T, 
-		fs = fs, 
-		num_source = max(args.sources), 
-		return_vad=True, 
-		clean_silence=True)
-	sourceDataset_val = at_dataset.LibriSpeechDataset(
-		path = dirs['sousig_val'], 
-		T = T, 
-		fs = fs, 
-		num_source = max(args.sources), 
-		return_vad=True, 
-		clean_silence=True)
-	sourceDataset_test = at_dataset.LibriSpeechDataset(
-		path = dirs['sousig_test'], 
-		T = T, 
-		fs = fs, 
-		num_source = max(args.sources),  
-		return_vad=True, 
-		clean_silence=True)
-	
-	# Noise signal
-	noiseDataset_train = at_dataset.NoiseDataset(
-		T = T, 
-		fs = fs, 
-		nmic = array_setup.mic_pos.shape[0], 
-		noise_type = Parameter(['spatial_white'], discrete=True), 
-		noise_path = None, 
-		c = speed)
-	noiseDataset_val = at_dataset.NoiseDataset(
-		T = T, 
-		fs = fs, 
-		nmic = array_setup.mic_pos.shape[0], 
-		noise_type = Parameter(['spatial_white'], discrete=True), 
-		noise_path = None, 
-		c = speed)
-	noiseDataset_test = at_dataset.NoiseDataset(
-		T = T, 
-		fs = fs, 
-		nmic = array_setup.mic_pos.shape[0], 
-		noise_type = Parameter(['spatial_white'], discrete=True), 
-		noise_path = None, 
-		c = speed)
+	if args.gen_on_the_fly:
+		# Source signal
+		sourceDataset_train = at_dataset.LibriSpeechDataset(
+			path = dirs['sousig_train'], 
+			T = T, 
+			fs = fs, 
+			num_source = max(args.sources), 
+			return_vad=True, 
+			clean_silence=True)
+		sourceDataset_val = at_dataset.LibriSpeechDataset(
+			path = dirs['sousig_val'], 
+			T = T, 
+			fs = fs, 
+			num_source = max(args.sources), 
+			return_vad=True, 
+			clean_silence=True)
+		sourceDataset_test = at_dataset.LibriSpeechDataset(
+			path = dirs['sousig_test'], 
+			T = T, 
+			fs = fs, 
+			num_source = max(args.sources),  
+			return_vad=True, 
+			clean_silence=True)
+		
+		# Noise signal
+		noiseDataset_train = at_dataset.NoiseDataset(
+			T = T, 
+			fs = fs, 
+			nmic = array_setup.mic_pos.shape[0], 
+			noise_type = Parameter(['spatial_white'], discrete=True), 
+			noise_path = None, 
+			c = speed)
+		noiseDataset_val = at_dataset.NoiseDataset(
+			T = T, 
+			fs = fs, 
+			nmic = array_setup.mic_pos.shape[0], 
+			noise_type = Parameter(['spatial_white'], discrete=True), 
+			noise_path = None, 
+			c = speed)
+		noiseDataset_test = at_dataset.NoiseDataset(
+			T = T, 
+			fs = fs, 
+			nmic = array_setup.mic_pos.shape[0], 
+			noise_type = Parameter(['spatial_white'], discrete=True), 
+			noise_path = None, 
+			c = speed)
 
 	# Segmenting, STFT parameters
 	# When win_shift_ratio = 0.5, then the number of time frames corresponding to one segment can be set to an integer
@@ -111,7 +112,7 @@ if __name__ == "__main__":
 	fre_used_ratio = 1
 	if args.source_state == 'static':
 		seg_len = T*fs
-		seg_shift = 0
+		seg_shift = 1
 	elif args.source_state == 'mobile':
 		seg_fra_ratio = 12 # one estimate per segment (namely seg_fra_ratio frames) 
 		seg_len = int(win_len*win_shift_ratio*(seg_fra_ratio+1))
@@ -121,54 +122,71 @@ if __name__ == "__main__":
 	segmenting = at_dataset.Segmenting_SRPDNN(K=seg_len, step=seg_shift, window=None)
 
 	# Room acoustics
-	dataset_train = at_dataset.RandomTrajectoryDataset(
-		sourceDataset = sourceDataset_train,
-		num_source = Parameter(args.sources, discrete=True), # Random number of sources
-		source_state = args.source_state,
-		room_sz = Parameter([3,3,2.5], [10,8,6]),  	# Random room sizes from 3x3x2.5 to 10x8x6 meters
-		T60 = Parameter(0.2, 1.3),					# Random reverberation times from 0.2 to 1.3 seconds
-		abs_weights = Parameter([0.5]*6, [1.0]*6),  # Random absorption weights ratios between walls
-		array_setup = array_setup,
-		array_pos = Parameter([0.1,0.1,0.1], [0.9,0.9,0.5]), # Ensure a minimum separation between the array and the walls
-		noiseDataset = noiseDataset_train,
-		SNR = Parameter(5, 30), 	
-		nb_points = traj_points,	
-		dataset_sz= 1000,
-		c = speed, 
-		transforms = [segmenting]
-	)
-	dataset_val = at_dataset.RandomTrajectoryDataset( 
-		sourceDataset = sourceDataset_val,
-		num_source = Parameter(args.sources, discrete=True),  
-		source_state = args.source_state,
-		room_sz = Parameter([3,3,2.5], [10,8,6]),
-		T60 = Parameter(0.2, 1.3),
-		abs_weights = Parameter([0.5]*6, [1.0]*6),
-		array_setup = array_setup,
-		array_pos = Parameter([0.1,0.1,0.1], [0.9,0.9,0.5]),
-		noiseDataset = noiseDataset_val,
-		SNR = Parameter(5, 30),
-		nb_points = traj_points,
-		dataset_sz= 1000,
-		c = speed, 
-		transforms = [segmenting]
-	)
-	dataset_test = at_dataset.RandomTrajectoryDataset( 
-		sourceDataset = sourceDataset_test,
-		num_source = Parameter(args.sources, discrete=True),  
-		source_state = args.source_state,
-		room_sz = Parameter([3,3,2.5], [10,8,6]),
-		T60 = Parameter(0.2, 1.3),
-		abs_weights = Parameter([0.5]*6, [1.0]*6),
-		array_setup = array_setup,
-		array_pos = Parameter([0.1,0.1,0.1], [0.9,0.9,0.5]),
-		noiseDataset = noiseDataset_test,
-		SNR = Parameter(5, 30),
-		nb_points = traj_points,
-		dataset_sz= 1000,
-		c = speed, 
-		transforms = [segmenting]
-	)
+	if args.gen_on_the_fly:
+		dataset_train = at_dataset.RandomMicSigDataset(
+			sourceDataset = sourceDataset_train,
+			num_source = Parameter(args.sources, discrete=True), # Random number of sources
+			source_state = args.source_state,
+			room_sz = Parameter([3,3,2.5], [10,8,6]),  	# Random room sizes from 3x3x2.5 to 10x8x6 meters
+			T60 = Parameter(0.2, 1.3),					# Random reverberation times from 0.2 to 1.3 seconds
+			abs_weights = Parameter([0.5]*6, [1.0]*6),  # Random absorption weights ratios between walls
+			array_setup = array_setup,
+			array_pos = Parameter([0.1,0.1,0.1], [0.9,0.9,0.5]), # Ensure a minimum separation between the array and the walls
+			noiseDataset = noiseDataset_train,
+			SNR = Parameter(5, 30), 	
+			nb_points = traj_points,	
+			dataset_sz= 1000,
+			c = speed, 
+			transforms = [segmenting]
+		)
+		dataset_val = at_dataset.RandomMicSigDataset( 
+			sourceDataset = sourceDataset_val,
+			num_source = Parameter(args.sources, discrete=True),  
+			source_state = args.source_state,
+			room_sz = Parameter([3,3,2.5], [10,8,6]),
+			T60 = Parameter(0.2, 1.3),
+			abs_weights = Parameter([0.5]*6, [1.0]*6),
+			array_setup = array_setup,
+			array_pos = Parameter([0.1,0.1,0.1], [0.9,0.9,0.5]),
+			noiseDataset = noiseDataset_val,
+			SNR = Parameter(5, 30),
+			nb_points = traj_points,
+			dataset_sz= 1000,
+			c = speed, 
+			transforms = [segmenting]
+		)
+		dataset_test = at_dataset.RandomMicSigDataset( 
+			sourceDataset = sourceDataset_test,
+			num_source = Parameter(args.sources, discrete=True),  
+			source_state = args.source_state,
+			room_sz = Parameter([3,3,2.5], [10,8,6]),
+			T60 = Parameter(0.2, 1.3),
+			abs_weights = Parameter([0.5]*6, [1.0]*6),
+			array_setup = array_setup,
+			array_pos = Parameter([0.1,0.1,0.1], [0.9,0.9,0.5]),
+			noiseDataset = noiseDataset_test,
+			SNR = Parameter(5, 30),
+			nb_points = traj_points,
+			dataset_sz= 1000,
+			c = speed, 
+			transforms = [segmenting]
+		)
+	else:
+		dataset_train = at_dataset.FixMicSigDataset( 
+			data_dir = dirs['sensig_train'],
+			dataset_sz = 102400,
+			transforms = [segmenting]
+			)			
+		dataset_val = at_dataset.FixMicSigDataset( 
+			data_dir = dirs['sensig_val'],
+			dataset_sz = 5120,
+			transforms = [segmenting]
+			)				
+		dataset_test = at_dataset.FixMicSigDataset( 
+			data_dir = dirs['sensig_test'],
+			dataset_sz = 5120,
+			transforms = [segmenting]
+			)
 
 	# %% Network declaration, learner declaration
 	tar_useVAD = True
