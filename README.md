@@ -59,7 +59,7 @@ If you find our work useful in your research, please consider citing:
 ```
 
 ## Reference code 
-- <a href="https://github.com/DavidDiazGuerra/Cross3D" target="_blank">Cross3D</a> 
++ <a href="https://github.com/DavidDiazGuerra/Cross3D" target="_blank">Cross3D</a> 
 
 ## Licence
 MIT
