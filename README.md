@@ -33,7 +33,7 @@ A python implementation of “**<a href="https://ieeexplore.ieee.org/document/97
  
 + **Training**
   ```
-  python RunSRPDNN.py --train --gpu-id [*] (--use-amp)
+  python RunSRPDNN.py --train --gen-on-the-fly --gpu-id [*] (--use-amp)
   ```
 + **Evaluation**
   - use GPU
