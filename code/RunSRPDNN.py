@@ -177,17 +177,17 @@ if __name__ == "__main__":
 	else:
 		dataset_train = at_dataset.FixMicSigDataset( 
 			data_dir = dirs['sensig_train'],
-			dataset_sz = 102400,
+			dataset_sz = 51200,
 			transforms = [segmenting]
 			)			
 		dataset_val = at_dataset.FixMicSigDataset( 
 			data_dir = dirs['sensig_val'],
-			dataset_sz = 5120,
+			dataset_sz = 1024,
 			transforms = [segmenting]
 			)				
 		dataset_test = at_dataset.FixMicSigDataset( 
 			data_dir = dirs['sensig_test'],
-			dataset_sz = 5120,
+			dataset_sz = 1024,
 			transforms = [segmenting]
 			)
 
@@ -240,7 +240,7 @@ if __name__ == "__main__":
 			lr = set_learning_rate(epoch=epoch-1, lr_init=args.lr, step=args.epochs, gamma=0.05)
 
 			set_random_seed(epoch)
-			loss_train, metric_train = learner.train_epoch(dataloader_train, lr=lr, epoch=epoch, return_metric=True)
+			loss_train = learner.train_epoch(dataloader_train, lr=lr, epoch=epoch, return_metric=False)
 
 			set_random_seed(args.seed)
 			loss_val, metric_val = learner.test_epoch(dataloader_val, return_metric=True)
@@ -257,9 +257,9 @@ if __name__ == "__main__":
 
 			# %% Visualize parameters with tensorboardX
 			train_writer.add_scalar('loss', loss_train, epoch)
-			train_writer.add_scalar('metric-MDR', metric_train['MDR'], epoch)
-			train_writer.add_scalar('metric-FAR', metric_train['FAR'], epoch)
-			train_writer.add_scalar('metric-MAE', metric_train['MAE'], epoch)
+			# train_writer.add_scalar('metric-MDR', metric_train['MDR'], epoch)
+			# train_writer.add_scalar('metric-FAR', metric_train['FAR'], epoch)
+			# train_writer.add_scalar('metric-MAE', metric_train['MAE'], epoch)
 			val_writer.add_scalar('loss', loss_val, epoch)
 			val_writer.add_scalar('metric-MDR', metric_val['MDR'], epoch)
 			val_writer.add_scalar('metric-FAR', metric_val['FAR'], epoch)

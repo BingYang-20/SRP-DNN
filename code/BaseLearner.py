@@ -86,11 +86,9 @@ class Learner(ABC):
 			if epoch is not None: pbar.set_description('Epoch {}'.format(epoch))
 
 			in_batch, gt_batch = self.data_preprocess(mic_sig_batch, gt_batch)
-
 			with torch.cuda.amp.autocast(enabled=self.use_amp):
 				pred_batch = self.model(in_batch)
 				loss_batch = self.loss(pred_batch = pred_batch, gt_batch = gt_batch)
-
 			# add up gradients until optimizer.zero_grad(), multiply a scale to gurantee the gradients equal to that when trajectories_per_gpu_call = trajectories_per_batch
 			if self.use_amp:
 				self.scaler.scale(loss_batch).backward()

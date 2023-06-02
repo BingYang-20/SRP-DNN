@@ -19,7 +19,7 @@ class opt():
 
         # for both training and test stages
         parser.add_argument('--gpu-id', type=str, default='7', metavar='GPU', help='GPU ID (default: 7)')
-        parser.add_argument('--workers', type=int, default=0, metavar='Worker', help='number of workers (default: 0)')
+        parser.add_argument('--workers', type=int, default=16, metavar='Worker', help='number of workers (default: 0)')
         parser.add_argument('--no-cuda', action='store_true', default=False, help='disables CUDA training (default: False)')
         parser.add_argument('--use-amp', action='store_true', default=False, help='Use automatic mixed precision training (default: False)')
         parser.add_argument('--seed', type=int, default=1, metavar='Seed', help='random seed (default: 1)')

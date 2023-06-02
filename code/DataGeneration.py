@@ -31,11 +31,11 @@ if (args.data_op == 'save_sig') | (args.data_op == 'save_RIR'):
 		set_seed(10000)
 
 	elif args.stage == 'val':
-		data_num = 5120
+		data_num = 2560
 		set_seed(10001)
 
 	elif args.stage == 'test':
-		data_num = 5120
+		data_num = 2560
 		set_seed(10002)
 
 	else:
