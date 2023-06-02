@@ -16,8 +16,11 @@ dirs = opts.dir()
 os.environ["OMP_NUM_THREADS"] = str(8) # limit the threads to reduce cpu overloads, will speed up when there are lots of CPU cores on the running machine
 os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_id)
 
-import numpy as np
 import torch
+torch.backends.cuda.matmul.allow_tf32 = True  # The flag below controls whether to allow TF32 on matmul. This flag defaults to False in PyTorch 1.12 and later.
+torch.backends.cudnn.allow_tf32 = True  # The flag below controls whether to allow TF32 on cuDNN. This flag defaults to True.
+
+import numpy as np
 import time
 import scipy.io
 

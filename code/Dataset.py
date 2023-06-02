@@ -9,7 +9,7 @@ import random
 import soundfile
 import pandas
 import warnings
-from copy import deepcopy
+import copy
 from collections import namedtuple
 from torch.utils.data import Dataset
 import matplotlib.pyplot as plt
@@ -327,6 +327,8 @@ class AcousticScene:
 		mic_signals_sources = np.array(mic_signals_sources).transpose(1,2,0) # (nsamples,nch,nsources)
 		dp_RIRs_sources = np.array(dp_RIRs_sources).transpose(1,2,3,0)
 		dp_mic_signals_sources = np.array(dp_mic_signals_sources).transpose(1,2,0)
+		self.checkRIR(RIRs_sources)
+		self.checkRIR(dp_RIRs_sources)
 
 		# Add Noise
 		if self.noise_signal is None:
@@ -364,6 +366,18 @@ class AcousticScene:
 		# 	# raise Exception("Value of microphone signals is out of range [-1, 1]")
 
 		return mic_signals
+	
+	def checkRIR(self, RIRs):
+		ok_flag = True
+		nan_flag = np.isnan(RIRs)
+		if (True in nan_flag):
+			warnings.warn('NAN exists in RIR~')
+			ok_flag = False
+		zero_flag = (np.sum(RIRs**2) == 0)
+		if zero_flag:
+			warnings.warn('RIR is all zeros~')
+			ok_flag = False
+		return ok_flag
 
 
 # %% Source signal Datasets
@@ -520,7 +534,7 @@ class NoiseDataset():
 			_, self.path_set = self._exploreCorpus(noise_path, 'wav') # valid for 'diffuse' and 'real-world'
 		self.c = c
 
-	def get_random_noise(self, mic_pos=None):
+	def get_random_noise(self, mic_pos=None, eps=1e-5):
 		noise_type = self.noise_type.getValue()
 
 		if noise_type == 'spatial_white':
@@ -847,11 +861,21 @@ class RandomMicSigDataset(Dataset):
 
 			return mic_signals, gts
 
+	def T60isValid(self, room_sz, T60, eps=1e-4):
+		alpha = 1
+		S = (room_sz[0] * room_sz[1] + room_sz[0] * room_sz[2] + room_sz[1] * room_sz[2]) * 2
+		V = np.prod(room_sz)
+		T60_min = 0.161 * V / (S * alpha) 
+		return bool(T60>=(T60_min-eps))  
+
 	def getRandomScene(self, idx):
 
 		# Room
-		room_sz = self.room_sz.getValue()
-		T60 = self.T60.getValue()
+		T60_is_valid = False
+		while(T60_is_valid==False):
+			room_sz = self.room_sz.getValue()
+			T60 = float(self.T60.getValue())
+			T60_is_valid = self.T60isValid(room_sz, T60)
 		abs_weights = self.abs_weights.getValue()
 		beta = gpuRIR.beta_SabineEstimation(room_sz, T60, abs_weights)
 
@@ -1007,7 +1031,7 @@ class LocataDataset(Dataset):
 		elif fs < self.fs:
 			raise Exception('The sampling rate of the file ({}Hz) was lower than self.fs ({}Hz'.format(fs, self.fs))
 
-		mic_signals_ori = deepcopy(mic_signals)
+		mic_signals_ori = copy.deepcopy(mic_signals)
 
 		# Remove initial silence
 		start = np.argmax(mic_signals[:,0] > mic_signals[:,0].max()*0.15)
@@ -1137,7 +1161,7 @@ class LocataDataset(Dataset):
 		elif vad_from == 'dataset':
 			vad = sensor_vads.transpose(1,0)
 
-		acoustic_scene.mic_vad_sources = deepcopy(vad) # (nsample, nsource)
+		acoustic_scene.mic_vad_sources = copy.deepcopy(vad) # (nsample, nsource)
 		acoustic_scene.mic_vad = np.sum(vad, axis=1)>0.5 # for vad of mixed sensor signals of source
 		
 		if self.transforms is not None:

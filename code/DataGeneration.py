@@ -5,7 +5,7 @@
 
 import os
 import argparse
-
+import tqdm
 
 parser = argparse.ArgumentParser(description='Generating multi-channel audio signals')
 parser.add_argument('--stage', type=str, default='train', metavar='Stage', help='stage that generated data used for (default: Pretrain)') # ['pretrain', 'preval', 'train', 'val', 'test']
@@ -103,9 +103,8 @@ if (args.data_op == 'save_sig') | (args.data_op == 'save_RIR'):
 		if exist_temp==False:
 			os.makedirs(save_dir)
 			print('make dir: ' + save_dir)
-		for idx in range(data_num):
-			if idx%1024==0:
-				print(int(idx/1024), 'K')
+		pbar = tqdm.tqdm(range(data_num), desc='generating signals')
+		for idx in pbar:
 			mic_signals, acoustic_scene = dataset[idx]  
 			sig_path = save_dir + '/' + str(idx) + '.wav'
 			acous_path = save_dir + '/' + str(idx) + '.npz'
