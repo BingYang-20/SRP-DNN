@@ -861,12 +861,27 @@ class RandomMicSigDataset(Dataset):
 
 			return mic_signals, gts
 
-	def T60isValid(self, room_sz, T60, eps=1e-4):
-		alpha = 1
-		S = (room_sz[0] * room_sz[1] + room_sz[0] * room_sz[2] + room_sz[1] * room_sz[2]) * 2
+	# def T60isValid(self, room_sz, T60, eps=1e-4):
+	# 	alpha = 1
+	# 	S = (room_sz[0] * room_sz[1] + room_sz[0] * room_sz[2] + room_sz[1] * room_sz[2]) * 2
+	# 	V = np.prod(room_sz)
+	# 	T60_min = 0.161 * V / (S * alpha) 
+	# 	return bool(T60>=(T60_min-eps))  
+
+	def T60isValid(self, room_sz, T60, alpha, th=0.005):
+		Sa = (alpha[0]+alpha[1]) * room_sz[1]*room_sz[2] + \
+			(alpha[2]+alpha[3]) * room_sz[0]*room_sz[2] + \
+			(alpha[4]+alpha[5]) * room_sz[0]*room_sz[1]
 		V = np.prod(room_sz)
-		T60_min = 0.161 * V / (S * alpha) 
-		return bool(T60>=(T60_min-eps))  
+		if Sa == 0: # avoid cases when all walls are reflective and T60 (from sabine eq) is extremely large
+			valid_flag = False
+		else:
+			T60_sabine = 0.161 * V / Sa 
+			# T60_min = 0.161 * V / S 
+			diff = abs(T60-T60_sabine)
+			valid_flag = bool(diff<th)  # false when T60<T60_min, or the abs_weights is not suited
+
+		return valid_flag 
 
 	def getRandomScene(self, idx):
 
@@ -875,9 +890,9 @@ class RandomMicSigDataset(Dataset):
 		while(T60_is_valid==False):
 			room_sz = self.room_sz.getValue()
 			T60 = float(self.T60.getValue())
-			T60_is_valid = self.T60isValid(room_sz, T60)
-		abs_weights = self.abs_weights.getValue()
-		beta = gpuRIR.beta_SabineEstimation(room_sz, T60, abs_weights)
+			abs_weights = self.abs_weights.getValue()
+			beta = gpuRIR.beta_SabineEstimation(room_sz, T60, abs_weights)
+			T60_is_valid = self.T60isValid(room_sz, T60, alpha=1-beta**2)
 
 		# Microphones
 		array_pos = self.array_pos.getValue() * room_sz
@@ -1098,7 +1113,7 @@ class LocataDataset(Dataset):
 					if cnt > len(sensor_vad)-1:
 						break
 				if cnt <= len(sensor_vad)-1:
-					VAD[cnt: end] = sensor_vad_ori[end]
+					VAD[cnt: ] = sensor_vad_ori[-1]
 					if cnt < len(sensor_vad) - 2:
 						print('Warning: VAD values do not match~')
 
@@ -1113,13 +1128,10 @@ class LocataDataset(Dataset):
 			DOA_pts = np.zeros(sources_pos.shape[0:2] + (2,))
 			DOA = np.zeros(trajectories.shape[0:2] + (2,))
 			for s in range(sources_pos.shape[0]):
-				source_pos_local = np.matmul( np.expand_dims(sources_pos[s,...] - array_pos, axis=1), array_rotation ).squeeze() # np.matmul( array_rotation, np.expand_dims(sources_pos[s,...] - array_pos, axis=-1) ).squeeze()
-				# DOA_pts[s,...] = cart2sph(source_pos_local) [:,1:3]
-				# DOA[s,...] = np.array([np.interp(t, timestamps, DOA_pts[s,:,i]) for i in range(2)]).transpose()
+				source_pos_local = np.matmul( np.expand_dims(sources_pos[s,...] - array_pos, axis=1), array_rotation ).squeeze()
 				DOA_pts[s, ...] = cart2sph(source_pos_local)[:, 1:3]
 				source_pos_local_interp = np.array([np.interp(t, timestamps, source_pos_local[ :, i]) for i in range(3)]).transpose()
 				DOA[s, ...] = cart2sph(source_pos_local_interp)[:, 1:3]
-			# DOA[DOA[...,1]<-np.pi, 1] += 2*np.pi
 
 		else:
 			sources_pos = None
@@ -1135,12 +1147,12 @@ class LocataDataset(Dataset):
 			source_signal = sources_signal.transpose(1,0),
 			fs = self.fs,
 			array_setup = self.array_setup,
-			mic_pos = np.matmul( array_rotation[0,...], np.expand_dims(self.array_setup.mic_pos*self.array_setup.mic_scale.getValue(), axis=-1) ).squeeze() + array_pos[0,:], 
-			timestamps = timestamps - start/self.fs, # time-stamp-wise
-			traj_pts = sources_pos.transpose(1,2,0), #[0,...] # time-stamp-wise
-			t = t - start/self.fs, # sample-wise
-			trajectory = trajectories.transpose(1,2,0), # sample-wise
-			DOA = DOA.transpose(1,2,0), #[0,...] # sample-wise
+			mic_pos = np.NaN, # np.matmul( array_rotation[0,...], np.expand_dims(self.array_setup.mic_pos*self.array_setup.mic_scale.getValue(), axis=-1) ).squeeze() + array_pos[0,:], # Not valid for moving arrays
+			timestamps = timestamps - start/self.fs, # time-stamp-wise original annonated
+			traj_pts = sources_pos.transpose(1,2,0), #[0,...] # time-stamp-wise original annonated
+			t = t - start/self.fs, # sample-wise remove silence
+			trajectory = trajectories.transpose(1,2,0), # sample-wise remove silence
+			DOA = DOA.transpose(1,2,0), #[0,...] # sample-wise remove silence
 			c = np.NaN
 		)
 

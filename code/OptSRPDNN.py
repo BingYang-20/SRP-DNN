@@ -58,8 +58,8 @@ class opt():
         dirs = {}
 
         dirs['code'] = work_dir + '/SRP-DNN/code'
-        # dirs['data'] = work_dir + '/SRP-DNN/data'
-        dirs['data'] = work_dir + '/data'
+        dirs['data'] = work_dir + '/SRP-DNN/data'
+        # dirs['data'] = work_dir + '/data'
         dirs['gerdata'] = work_dir + '/SRP-DNN/data'
         dirs['exp'] = work_dir + '/SRP-DNN/exp'
         

@@ -150,7 +150,6 @@ def forgetting_norm(input, num_frame_set=None):
 
     return output
 
-
 def save_file(mic_signal, acoustic_scene, sig_path, acous_path):
     
     if sig_path is not None:

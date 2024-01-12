@@ -363,7 +363,6 @@ class visDOA(nn.Module):
 
 		return plt
 		
-		 
 class AddChToBatch(nn.Module):
 	""" Function: Change dimension from  (nb, nch, ...) to (nb*(nch-1), ...) 
 	"""

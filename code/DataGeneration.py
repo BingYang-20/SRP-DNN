@@ -131,33 +131,22 @@ if (args.data_op == 'save_sig') | (args.data_op == 'save_RIR'):
 		
 
 elif (args.data_op == 'read_sig') | ( args.data_op == 'read_RIR'):
-	acoustic_scene = at_dataset.AcousticScene(	
-				room_sz = [],
-				T60 = [],
-				beta = [],
-				RIR = [],
-				array_setup = [],
-				mic_pos = [],
-				array_pos = [],
-				noise_signal = [],
-				SNR = [],
-				source_signal = [],
-				fs = [],
-				timestamps = [],
-				traj_pts = [],
-				t = [],
-				trajectory = [],
-				# DOA = [],
-				c = []
-			)
-
-	if args.data_op == 'read_sig':
+	class AcousticScene:
+		def __init__(self):
+			pass
+	acoustic_scene = AcousticScene()
+	
+	if (args.data_op == 'read_sig'):
 		sig_path = dirs['sensig_val'] + '/' + '0.wav'
 		acous_path = dirs['sensig_val'] + '/' + '0.npz'
 		mic_signal, acoustic_scene = load_file(acoustic_scene, sig_path, acous_path)
-		for i in acoustic_scene.__dict__.keys():
-			print(i, acoustic_scene.__dict__[i])
-		print(acoustic_scene.RIR[0].shape)
+	# if ( args.data_op == 'read_RIR'):
+	# 	acous_path = dirs['rir_train'] + '/' + '0.npz'
+	# 	acoustic_scene = load_file(acoustic_scene, sig_path=None, acous_path=acous_path)
+
+	for i in acoustic_scene.__dict__.keys():
+		print(i, acoustic_scene.__dict__[i])
+	print(acoustic_scene.RIR[0].shape)
 	
 	# elif args.data_op == 'read_RIR':
 	# 	delattr(acoustic_scene, 'SNR')

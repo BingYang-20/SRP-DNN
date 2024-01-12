@@ -213,6 +213,8 @@ if __name__ == "__main__":
 		learner.cpu()
 	if args.use_amp:
 		learner.amp()
+	if args.gen_on_the_fly:
+		args.workers = 0
 	kwargs = {'num_workers': args.workers, 'pin_memory': True}  if use_cuda else {}
 
 
