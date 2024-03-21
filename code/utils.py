@@ -6,35 +6,6 @@ import pickle
 import soundfile 
 from copy import deepcopy
 
-## for spherical coordinates
-
-def cart2sph(cart, include_r=False):
-	""" Cartesian coordinates to spherical coordinates conversion.
-	Each row contains one point in format (x, y, x) or (elevation, azimuth, radius),
-	where the radius is optional according to the include_r argument.
-	"""
-	r = torch.sqrt(torch.sum(torch.pow(cart, 2), dim=-1))
-	theta = torch.acos(cart[..., 2] / r)
-	phi = torch.atan2(cart[..., 1], cart[..., 0])
-	if include_r:
-		sph = torch.stack((theta, phi, r), dim=-1)
-	else:
-		sph = torch.stack((theta, phi), dim=-1)
-	return sph
-
-
-def sph2cart(sph):
-	""" Spherical coordinates to cartesian coordinates conversion.
-	Each row contains one point in format (x, y, x) or (elevation, azimuth, radius),
-	where the radius is supposed to be 1 if it is not included.
-	"""
-	if sph.shape[-1] == 2: sph = torch.cat((sph, torch.ones_like(sph[..., 0]).unsqueeze(-1)), dim=-1)
-	x = sph[..., 2] * torch.sin(sph[..., 0]) * torch.cos(sph[..., 1])
-	y = sph[..., 2] * torch.sin(sph[..., 0]) * torch.sin(sph[..., 1])
-	z = sph[..., 2] * torch.cos(sph[..., 0])
-	return torch.stack((x, y, z), dim=-1)
-
-
 ## for training process 
 
 def set_seed(seed):

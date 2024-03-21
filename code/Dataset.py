@@ -18,7 +18,16 @@ import webrtcvad
 import gpuRIR
 from utils import load_file
 
+
 # %% Util functions
+
+def cart2sph(cart):
+	xy2 = cart[:,0]**2 + cart[:,1]**2
+	sph = np.zeros_like(cart)
+	sph[:,0] = np.sqrt(xy2 + cart[:,2]**2)
+	sph[:,1] = np.arctan2(np.sqrt(xy2), cart[:,2]) # Elevation angle defined from Z-axis down
+	sph[:,2] = np.arctan2(cart[:,1], cart[:,0])
+	return sph
 
 def acoustic_power(s):
 	""" Acoustic power of after removing the silences.
@@ -35,15 +44,6 @@ def acoustic_power(s):
 	window_power = np.mean(S ** 2, axis=-1)
 	th = 0.01 * window_power.max()  # Threshold for silent detection
 	return np.mean(window_power[np.nonzero(window_power > th)])
-
-
-def cart2sph(cart):
-	xy2 = cart[:,0]**2 + cart[:,1]**2
-	sph = np.zeros_like(cart)
-	sph[:,0] = np.sqrt(xy2 + cart[:,2]**2)
-	sph[:,1] = np.arctan2(np.sqrt(xy2), cart[:,2]) # Elevation angle defined from Z-axis down
-	sph[:,2] = np.arctan2(cart[:,1], cart[:,0])
-	return sph
 
 
 # %% Util classes
