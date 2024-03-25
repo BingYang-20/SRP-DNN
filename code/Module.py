@@ -487,7 +487,7 @@ class DPIPD(nn.Module):
 		return self.dpipd_template, dpipd, self.doa_candidate
 	
 	def data_adjust(self, data):
-		# change dimension from (..., nmic-1) to (..., nmic*(nmic-1)/2)
+		# change dimension from (..., nmic) to (..., nmic-1)/(..., nmic*(nmic-1)/2)
 		if self.ch_mode == 'M':
 			data_adjust = data[..., 0, 1:] # (..., nmic-1)
 		elif self.ch_mode == 'MM':

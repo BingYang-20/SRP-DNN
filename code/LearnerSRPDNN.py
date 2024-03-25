@@ -76,11 +76,7 @@ class SourceTrackingFromSTFTLearner(Learner):
 			vad_batch = gt_batch['vad_sources']
 
 			source_doa = DOAw_batch.cpu().numpy()  
-			
-			if self.ch_mode == 'M':
-				_, ipd_batch, _ = self.gerdpipd(source_doa=source_doa)
-			elif self.ch_mode == 'MM':
-				_, ipd_batch, _ = self.gerdpipd(source_doa=source_doa)
+			_, ipd_batch, _ = self.gerdpipd(source_doa=source_doa)
 			ipd_batch = np.concatenate((ipd_batch.real[:,:,self.fre_range_used,:,:], ipd_batch.imag[:,:,self.fre_range_used,:,:]), axis=2).astype(np.float32) # (nb, ntime, 2nf, nmic-1, nsource)
 			ipd_batch = torch.from_numpy(ipd_batch)
 

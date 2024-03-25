@@ -22,6 +22,8 @@ from utils import load_file
 # %% Util functions
 
 def cart2sph(cart):
+	""" cart [x,y,z] → sph [r,ele,azi]
+	"""
 	xy2 = cart[:,0]**2 + cart[:,1]**2
 	sph = np.zeros_like(cart)
 	sph[:,0] = np.sqrt(xy2 + cart[:,2]**2)
