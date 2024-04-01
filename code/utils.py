@@ -16,8 +16,7 @@ def set_seed(seed):
 	torch.cuda.manual_seed(seed)
 	torch.backends.cudnn.deterministic = True
 	torch.backends.cudnn.benchmark = False
-	torch.backends.cudnn.enabled = False # avoid-CUDNN_STATUS_NOT_SUPPORTED #(commont if use cpu??)
-
+	
 	np.random.seed(seed)
 	random.seed(seed)
 
