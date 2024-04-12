@@ -108,7 +108,7 @@ def forgetting_norm(input, num_frame_set=None):
     mu = 0
     mu_list = []
     for frame_idx in range(num_frames):
-        if num_frames<=num_frame_set:
+        if frame_idx<=num_frame_set:
             alpha = (frame_idx - 1) / (frame_idx + 1)
         else:
             alpha = (num_frame_set - 1) / (num_frame_set + 1)

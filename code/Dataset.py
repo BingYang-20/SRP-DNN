@@ -651,7 +651,7 @@ class NoiseDataset():
 		# if type_nf == 'spherical':
 		# 	DC = np.sinc(w_rad * dist / (c * math.pi))
 		# elif type_nf == 'cylindrical':
-		# 	DC = scipy.special(0, w_rad * dist / c)
+		# 	DC = scipy.special.jn(0, w_rad * dist / c)
 		# else:
 		# 	raise Exception('Unknown noise field')
 
@@ -664,7 +664,7 @@ class NoiseDataset():
 					if type_nf == 'spherical':
 						DC[p, q, :] = np.sinc(w_rad*dist/(c*math.pi))
 					elif type_nf == 'cylindrical':
-						DC[p, q, :] = scipy.special(0, w_rad*dist/c)
+						DC[p, q, :] = scipy.special.jn(0, w_rad*dist/c)
 					else:
 						raise Exception('Unknown noise field')
 		return DC
@@ -980,7 +980,7 @@ class RandomMicSigDataset(Dataset):
 			DOA = DOA,
 			c = self.c 
 		)
-		acoustic_scene.source_vad = vad[:,0:num_source] # a mask
+		acoustic_scene.source_vad = vad[:,0:num_source].astype(bool) # a mask
 
 		return acoustic_scene
 
