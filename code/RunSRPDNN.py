@@ -118,7 +118,7 @@ if __name__ == "__main__":
 		seg_shift = 1
 	elif args.source_state == 'mobile':
 		seg_fra_ratio = 12 # one estimate per segment (namely seg_fra_ratio frames) 
-		seg_len = int(win_len*win_shift_ratio*(seg_fra_ratio+1))
+		seg_len = int(win_len*win_shift_ratio*(seg_fra_ratio-1)+win_len)
 		seg_shift = int(win_len*win_shift_ratio*seg_fra_ratio)
 	else:
 		print('Source state model unrecognized~')
