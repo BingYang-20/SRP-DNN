@@ -1312,7 +1312,7 @@ class Segmenting(object):
 			raise Exception('The window step can not be larger than the signal length ({})'.format(L))
 
 		# Pad and window the signal
-		x = np.append(x, np.zeros((N_w * self.step + self.K - L, N_mics)), axis=0)
+		x = np.append(x, np.zeros((N_w * self.step + self.K - L, N_mics), dtype=x.dtype), axis=0)
 
 		shape_Xw = (N_w, self.K, N_mics)
 		strides_Xw = [self.step * N_mics, N_mics, 1]
@@ -1346,7 +1346,7 @@ class Segmenting(object):
 		# Pad and window the VAD if it exists
 		if hasattr(acoustic_scene, 'mic_vad'): 
 			vad = acoustic_scene.mic_vad[:, np.newaxis]
-			vad = np.append(vad, np.zeros((L - vad.shape[0], 1)), axis=0)
+			vad = np.append(vad, np.zeros((L - vad.shape[0], 1), dtype=vad.dtype), axis=0)
 
 			shape_vadw = (N_w, self.K, 1)
 			strides_vadw = [self.step * 1, 1, 1]
@@ -1358,12 +1358,12 @@ class Segmenting(object):
 		if hasattr(acoustic_scene, 'mic_vad_sources'): 
 			shape_vadw = (N_w, self.K, 1)
 			strides_vadw = [self.step * 1, 1, 1]
-			strides_vadw = [strides_vadw[i] * vad.itemsize for i in range(3)]
+			strides_vadw = [strides_vadw[i] * acoustic_scene.mic_vad_sources.itemsize for i in range(3)]
 			num_source = acoustic_scene.mic_vad_sources.shape[1]
 			vad_sources = []
 			for source_idx in range(num_source):
 				vad = acoustic_scene.mic_vad_sources[:, source_idx:source_idx + 1]
-				vad = np.append(vad, np.zeros((L - vad.shape[0], 1)), axis=0)
+				vad = np.append(vad, np.zeros((L - vad.shape[0], 1), dtype=vad.dtype), axis=0)
 
 				vad_sources += [np.lib.stride_tricks.as_strided(vad, shape=shape_vadw, strides=strides_vadw)[..., 0]]
 
