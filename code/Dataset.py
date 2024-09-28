@@ -781,7 +781,7 @@ class FixMicSigDataset(Dataset):
 		else: 
 			gts = {}
 			gts['doa'] = acoustic_scene.DOAw.astype(np.float32)
-			gts['vad_sources'] = acoustic_scene.mic_vad_sources
+			gts['vad_sources'] = acoustic_scene.mic_vad_sources.astype(np.float32)
 			# gts['vad'] = acoustic_scene.mic_vad
 
 			return mic_signals, gts
@@ -859,7 +859,7 @@ class RandomMicSigDataset(Dataset):
 		else:
 			gts = {}
 			gts['doa'] = acoustic_scene.DOAw.astype(np.float32)
-			gts['vad_sources'] = acoustic_scene.mic_vad_sources
+			gts['vad_sources'] = acoustic_scene.mic_vad_sources.astype(np.float32)
 
 			return mic_signals, gts
 
@@ -1115,7 +1115,7 @@ class LocataDataset(Dataset):
 					if cnt > len(sensor_vad)-1:
 						break
 				if cnt <= len(sensor_vad)-1:
-					VAD[cnt: ] = sensor_vad_ori[-1]
+					sensor_vad[cnt: ] = sensor_vad_ori[-1]
 					if cnt < len(sensor_vad) - 2:
 						print('Warning: VAD values do not match~')
 
@@ -1187,7 +1187,7 @@ class LocataDataset(Dataset):
 		else:
 			gts = {}
 			gts['doa'] = acoustic_scene.DOAw.astype(np.float32)
-			gts['vad_sources'] = acoustic_scene.mic_vad_sources
+			gts['vad_sources'] = acoustic_scene.mic_vad_sources.astype(np.float32)
 						
 			return mic_signals.copy(), gts # np.ascontiguousarray(mic_signals)
 
@@ -1254,7 +1254,7 @@ class Segmenting_SRPDNN(object):
 		# Pad and window the VAD if it exists
 		if hasattr(acoustic_scene, 'mic_vad'): # (nsample,1)
 			vad = acoustic_scene.mic_vad[:, np.newaxis] 
-			vad = np.append(vad, np.zeros((L - vad.shape[0], 1)), axis=0)
+			vad = np.append(vad, np.zeros((L - vad.shape[0], 1), dtype=vad.dtype), axis=0)
 
 			shape_vadw = (N_w, self.K, 1)
 			strides_vadw = [self.step * 1, 1, 1]

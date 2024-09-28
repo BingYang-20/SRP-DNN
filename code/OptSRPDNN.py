@@ -64,9 +64,9 @@ class opt():
         dirs['exp'] = work_dir + '/SRP-DNN/exp'
         
         # signal data
-        dirs['sousig_train'] = dirs['data'] + '/SouSig/LibriSpeech/train-clean-100'
-        dirs['sousig_val'] = dirs['data'] + '/SouSig/LibriSpeech/dev-clean'
-        dirs['sousig_test'] = dirs['data'] + '/SouSig/LibriSpeech/test-clean'
+        dirs['sousig_train'] = dirs['data'] + '/SrcSig/LibriSpeech/train-clean-100'
+        dirs['sousig_val'] = dirs['data'] + '/SrcSig/LibriSpeech/dev-clean'
+        dirs['sousig_test'] = dirs['data'] + '/SrcSig/LibriSpeech/test-clean'
         dirs['sensig_locata'] = dirs['data'] + '/SenSig/LOCATA'
 
         dirs['noisig_train'] = dirs['data'] + '/NoiSig/NOISEX-92'

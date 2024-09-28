@@ -701,7 +701,7 @@ class SRP_map(nn.Module):
 				self.IMTDF[:, :, k, l] = np.dot(r, rn[l, :] - rn[k, :]) / c
 
 		tau = np.concatenate([range(0, K // 2 + 1), range(-K // 2 + 1, 0)]) / float(fs)  # Valid discrete values
-		self.tau0 = np.zeros_like(self.IMTDF, dtype=np.int)
+		self.tau0 = np.zeros_like(self.IMTDF, dtype=int)
 		for k in range(self.N):
 			for l in range(self.N):
 				for i in range(resTheta):
